@@ -146,6 +146,21 @@ textarea.field { min-height: 6rem; resize: vertical; line-height: 1.55; }
 @media (prefers-reduced-motion: reduce) {
   .marquee-row { animation: none; }
 }
+/* Slow breathing fade for the login-page gallery. Each tile gets its own
+   delay + duration via inline style for a staggered, rhythmic feel. */
+@keyframes tile-breathe {
+  0%, 100% { opacity: 0.18; transform: scale(1); }
+  45%, 55% { opacity: 1;    transform: scale(1.015); }
+}
+.tile-breathe {
+  animation: tile-breathe var(--breathe-dur, 7s) ease-in-out infinite;
+  animation-delay: var(--breathe-delay, 0ms);
+  will-change: opacity, transform;
+}
+@media (prefers-reduced-motion: reduce) {
+  .tile-breathe { animation: none; opacity: 1; }
+}
+
 /* Fade the inside edges so frames fade in/out as they cross the column */
 .marquee-mask {
   -webkit-mask-image: linear-gradient(
