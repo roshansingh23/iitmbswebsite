@@ -1,47 +1,41 @@
 "use client";
 
 import { useState } from "react";
-import { signIn } from "next-auth/react";
 import { useSearchParams } from "next/navigation";
-import { Input, Label } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
+import { supabaseBrowser } from "@/lib/supabase-browser";
 
-// Map of NextAuth error codes to user-facing messages. Specific enough to
-// actually debug a misconfiguration, but never leaks who is/isn't allowed.
 const ERROR_MESSAGES: Record<string, string> = {
-  Configuration: "Sign-in isn't configured.",
   AccessDenied: "This email can't be used.",
-  Verification: "Link expired.",
-  OAuthSignin: "Google sign-in failed.",
-  OAuthCallback: "Google sign-in failed.",
-  OAuthCreateAccount: "Couldn't create your account.",
-  EmailCreateAccount: "Couldn't create your account.",
-  Callback: "Sign-in failed.",
-  OAuthAccountNotLinked: "Use your original sign-in method.",
-  EmailSignin: "This email can't be used.",
-  CredentialsSignin: "Sign-in failed.",
-  SessionRequired: "Please sign in.",
+  callback_failed: "Sign-in failed.",
   Default: "Something went wrong."
 };
 
 export function LoginForm() {
   const params = useSearchParams();
   const errorParam = params.get("error");
-  const [email, setEmail] = useState("");
-  const [status, setStatus] = useState<"idle" | "sending" | "sent" | "error">("idle");
-  const [message, setMessage] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [message, setMessage] = useState<string | null>(null);
 
-  async function onSubmit(e: React.FormEvent) {
-    e.preventDefault();
-    setStatus("sending");
-    setMessage("");
-    const res = await signIn("email", { email, redirect: false, callbackUrl: "/discover" });
-    if (res?.error) {
-      setStatus("error");
-      setMessage(ERROR_MESSAGES[res.error] ?? ERROR_MESSAGES.Default);
-      return;
+  async function signInWithGoogle() {
+    setBusy(true);
+    setMessage(null);
+    try {
+      const supabase = supabaseBrowser();
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: "google",
+        options: {
+          redirectTo: `${window.location.origin}/auth/callback?next=/discover`
+        }
+      });
+      if (error) {
+        setMessage(error.message);
+        setBusy(false);
+      }
+      // Otherwise the browser is being redirected to Google; nothing else to do.
+    } catch (e: any) {
+      setMessage(e?.message ?? "Couldn't start sign-in.");
+      setBusy(false);
     }
-    setStatus("sent");
   }
 
   const inlineError = errorParam ? (ERROR_MESSAGES[errorParam] ?? ERROR_MESSAGES.Default) : null;
@@ -50,45 +44,16 @@ export function LoginForm() {
     <>
       <button
         type="button"
-        onClick={() => signIn("google", { callbackUrl: "/discover" })}
-        className="mt-10 w-full inline-flex items-center justify-center gap-3 border border-ink rounded-full px-5 py-3 text-sm font-semibold hover:bg-tint transition"
+        onClick={signInWithGoogle}
+        disabled={busy}
+        className="mt-10 w-full inline-flex items-center justify-center gap-3 border border-ink rounded-full px-5 py-3 text-sm font-semibold hover:bg-tint transition disabled:opacity-50"
       >
         <GoogleMark />
-        Continue with Google
+        {busy ? "Opening Google…" : "Continue with Google"}
       </button>
 
-      <div className="my-8 flex items-center gap-4">
-        <span className="flex-1 h-px bg-hairline" />
-        <span className="text-[0.65rem] tracking-[0.22em] uppercase text-muted font-semibold">Or by email</span>
-        <span className="flex-1 h-px bg-hairline" />
-      </div>
-
-      <form onSubmit={onSubmit} className="space-y-6">
-        <div>
-          <Label htmlFor="email">Email</Label>
-          <Input
-            id="email"
-            name="email"
-            type="email"
-            autoComplete="email"
-            required
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            placeholder="you@email.com"
-          />
-        </div>
-        <Button type="submit" disabled={status === "sending"} className="w-full">
-          {status === "sending" ? "Sending…" : "Send sign-in link"}
-        </Button>
-      </form>
-
-      {status === "sent" && (
-        <p className="mt-6 text-sm text-muted border-l border-ink pl-3">
-          Check your inbox. The link expires in 24 hours.
-        </p>
-      )}
-      {(status === "error" || inlineError) && (
-        <p className="mt-6 text-sm text-ink border-l border-ink pl-3 leading-relaxed">
+      {(message || inlineError) && (
+        <p className="mt-6 text-sm text-ink border-l border-ink pl-3">
           {message || inlineError}
         </p>
       )}

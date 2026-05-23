@@ -1,24 +1,46 @@
-// Server-side Supabase Realtime broadcast helper. Uses the public anon key
-// because broadcast channels with `private: false` accept anon publishes.
-// Falls through silently if Supabase env vars aren't configured (dev / build).
+import { createServerClient, type CookieOptions } from "@supabase/ssr";
+import { cookies } from "next/headers";
+import { createClient } from "@supabase/supabase-js";
 
-import { createClient, type SupabaseClient } from "@supabase/supabase-js";
-
-let _client: SupabaseClient | null = null;
-function client() {
-  if (_client) return _client;
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-  if (!url || !key) return null;
-  _client = createClient(url, key, { auth: { persistSession: false } });
-  return _client;
+// Cookies-aware Supabase client for server components, route handlers, and
+// server actions. Reads + refreshes the auth session through the same cookie
+// jar Next.js uses for the request.
+export function supabaseServer() {
+  const cookieStore = cookies();
+  return createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      cookies: {
+        get(name: string) {
+          return cookieStore.get(name)?.value;
+        },
+        set(name: string, value: string, options: CookieOptions) {
+          try {
+            cookieStore.set({ name, value, ...options });
+          } catch {
+            // Called from a Server Component; mutations not allowed. Safe to ignore.
+          }
+        },
+        remove(name: string, options: CookieOptions) {
+          try {
+            cookieStore.set({ name, value: "", ...options });
+          } catch {}
+        }
+      }
+    }
+  );
 }
 
+// Broadcast helper for chat / realtime. No cookie awareness needed.
+let _broadcaster: ReturnType<typeof createClient> | null = null;
 export async function supabaseBroadcast(channelName: string, event: string, payload: unknown) {
-  const sb = client();
-  if (!sb) return;
-  const channel = sb.channel(channelName);
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+  if (!url || !key) return;
+  if (!_broadcaster) _broadcaster = createClient(url, key, { auth: { persistSession: false } });
+  const channel = _broadcaster.channel(channelName);
   await channel.subscribe();
   await channel.send({ type: "broadcast", event, payload });
-  setTimeout(() => { channel.unsubscribe(); }, 500);
+  setTimeout(() => channel.unsubscribe(), 500);
 }

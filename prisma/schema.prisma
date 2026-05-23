@@ -84,6 +84,8 @@ enum HookTarget {
 
 model User {
   id              String        @id @default(cuid())
+  // Supabase auth.users.id (UUID) for the OAuth identity linked to this profile.
+  authId          String?       @unique @db.Uuid
   email           String        @unique
   emailVerified   DateTime?
   name            String?

@@ -3,8 +3,7 @@ import Link from "next/link";
 import { ScrollNav } from "@/components/scroll-nav";
 import { DateSpots } from "@/components/date-spots";
 
-const HERO_IMAGE =
-  "https://media.istockphoto.com/id/1857979915/photo/happy-and-young-tourist-couple-enjoying-a-romantic-getaway-in-iconic-streets-of-london-city.jpg?s=612x612&w=0&k=20&c=BlyBxNeD9UV-jQviTMtGRsDmJA6uzullIloq8tywgAE=";
+const HERO_IMAGE = "https://ceranna.com/wp-content/uploads/2017/03/mg_7929.jpg";
 
 export default function Landing() {
   return (
@@ -195,40 +194,75 @@ function DarkTestimonial() {
 function SiteFooter() {
   const year = new Date().getFullYear();
   return (
-    <footer className="bg-white">
-      <div className="mx-auto max-w-7xl px-6 lg:px-10 py-14 grid gap-10 md:grid-cols-12">
+    <footer style={{ background: "#000" }} className="text-white">
+      <div className="mx-auto max-w-7xl px-6 lg:px-10 py-16 grid gap-10 md:grid-cols-12">
         <div className="md:col-span-5">
-          <Link href="/" className="font-extrabold text-2xl tracking-[-0.04em]">Hooked.</Link>
+          <Link href="/" className="font-extrabold text-2xl tracking-[-0.04em] text-white">
+            Hooked.
+          </Link>
         </div>
 
         <div className="md:col-span-2">
-          <p className="eyebrow mb-3">App</p>
+          <p
+            className="mb-3"
+            style={{
+              fontSize: "0.7rem",
+              letterSpacing: "0.22em",
+              textTransform: "uppercase",
+              color: "rgba(255,255,255,0.5)",
+              fontWeight: 600
+            }}
+          >
+            App
+          </p>
           <ul className="space-y-2 text-sm">
-            <li><Link href="/login">Sign in</Link></li>
-            <li><Link href="/login">Get the app</Link></li>
+            <li><Link href="/login" className="hover:text-white/70 transition">Sign in</Link></li>
+            <li><Link href="/login" className="hover:text-white/70 transition">Get the app</Link></li>
           </ul>
         </div>
 
         <div className="md:col-span-2">
-          <p className="eyebrow mb-3">Company</p>
+          <p
+            className="mb-3"
+            style={{
+              fontSize: "0.7rem",
+              letterSpacing: "0.22em",
+              textTransform: "uppercase",
+              color: "rgba(255,255,255,0.5)",
+              fontWeight: 600
+            }}
+          >
+            Company
+          </p>
           <ul className="space-y-2 text-sm">
-            <li><Link href="/careers">Careers</Link></li>
-            <li><Link href="/press">Press</Link></li>
-            <li><Link href="/safety">Safety</Link></li>
+            <li><Link href="/careers" className="hover:text-white/70 transition">Careers</Link></li>
+            <li><Link href="/press" className="hover:text-white/70 transition">Press</Link></li>
+            <li><Link href="/safety" className="hover:text-white/70 transition">Safety</Link></li>
           </ul>
         </div>
 
         <div className="md:col-span-3">
-          <p className="eyebrow mb-3">Legal</p>
+          <p
+            className="mb-3"
+            style={{
+              fontSize: "0.7rem",
+              letterSpacing: "0.22em",
+              textTransform: "uppercase",
+              color: "rgba(255,255,255,0.5)",
+              fontWeight: 600
+            }}
+          >
+            Legal
+          </p>
           <ul className="space-y-2 text-sm">
-            <li><Link href="/terms">Terms</Link></li>
-            <li><Link href="/privacy">Privacy</Link></li>
-            <li><Link href="/community">Community guidelines</Link></li>
+            <li><Link href="/terms" className="hover:text-white/70 transition">Terms</Link></li>
+            <li><Link href="/privacy" className="hover:text-white/70 transition">Privacy</Link></li>
+            <li><Link href="/community" className="hover:text-white/70 transition">Community guidelines</Link></li>
           </ul>
         </div>
       </div>
 
-      <div className="mx-auto max-w-7xl px-6 lg:px-10 h-14 flex items-center justify-between text-xs text-muted">
+      <div className="mx-auto max-w-7xl px-6 lg:px-10 h-14 flex items-center justify-between text-xs" style={{ color: "rgba(255,255,255,0.55)" }}>
         <span>© {year} Hooked.</span>
         <span>Made in India.</span>
       </div>

@@ -1,13 +1,13 @@
 import { NextResponse } from "next/server";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
+import { supabaseServer } from "@/lib/supabase-server";
 import { signUpload } from "@/lib/cloudinary";
 
 export const runtime = "nodejs";
 
 export async function POST() {
-  const session = await getServerSession(authOptions);
-  if (!session?.user) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
+  const supabase = supabaseServer();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
   try {
     const sig = signUpload({});
     return NextResponse.json(sig);
