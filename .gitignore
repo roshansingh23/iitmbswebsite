@@ -1,5 +1,6 @@
 node_modules
 .next
+prisma-schema.sql
 out
 build
 .env

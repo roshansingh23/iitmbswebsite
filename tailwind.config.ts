@@ -5,18 +5,16 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
-        bone: "#F3F0E9",
-        card: "#FBFAF7",
+        bone: "#FFFFFF",
+        card: "#FFFFFF",
         paper: "#FFFFFF",
         hairline: "#E4DFD4",
         ink: "#1C1B19",
         muted: "#6A6358",
-        tint: "#E8E2D4"
+        tint: "#F1ECE0"
       },
       fontFamily: {
         sans: ["var(--font-sans)", "ui-sans-serif", "system-ui", "sans-serif"],
-        // Display and "serif" both alias to Inter now — keeps any callers
-        // that referenced font-serif from breaking.
         serif: ["var(--font-sans)", "ui-sans-serif", "system-ui", "sans-serif"],
         display: ["var(--font-sans)", "ui-sans-serif", "system-ui", "sans-serif"]
       },
@@ -25,15 +23,10 @@ const config: Config = {
         tighter2: "-0.028em",
         ink: "-0.045em"
       },
-      boxShadow: {
-        soft: "0 1px 3px rgba(0,0,0,0.06)"
-      },
-      maxWidth: {
-        prose2: "62ch"
-      }
+      boxShadow: { soft: "0 1px 3px rgba(0,0,0,0.06)" },
+      maxWidth: { prose2: "62ch" }
     }
   },
   plugins: []
 };
-
 export default config;

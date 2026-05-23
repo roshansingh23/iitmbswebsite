@@ -2,16 +2,14 @@ import Link from "next/link";
 
 export default function Landing() {
   return (
-    <div className="min-h-screen flex flex-col bg-bone">
+    <div className="min-h-screen flex flex-col bg-white">
       <SiteHeader />
       <main className="flex-1">
         <Hero />
-        <PhotoCarousel />
-        <FunkyStatement />
-        <ThreeReasons />
-        <PromptShowcase />
-        <PullQuote />
-        <ClosingCta />
+        <Statement />
+        <LabsBlock />
+        <DarkTestimonial />
+        <TeamBlock />
       </main>
       <SiteFooter />
     </div>
@@ -19,22 +17,27 @@ export default function Landing() {
 }
 
 /* ─────────────────────────────────────────────────────────────────────────
-   Empty image frame — hairline border + tint surface + soft shadow + tiny
-   corner label so each blank reads as deliberate placeholder.
+   Empty image frame
    ───────────────────────────────────────────────────────────────────────── */
 function Frame({
   aspect = "4/5",
   label = "Photo",
-  className = ""
+  className = "",
+  rounded = true
 }: {
   aspect?: string;
   label?: string;
   className?: string;
+  rounded?: boolean;
 }) {
   return (
     <div
-      className={"card-line bg-tint relative overflow-hidden " + className}
-      style={{ aspectRatio: aspect }}
+      className={
+        "bg-tint border border-hairline relative overflow-hidden " +
+        (rounded ? "rounded-[4px] " : "") +
+        className
+      }
+      style={{ aspectRatio: aspect, boxShadow: "0 1px 3px rgba(0,0,0,0.06)" }}
     >
       <span
         className="absolute top-3 left-3"
@@ -53,29 +56,16 @@ function Frame({
 }
 
 /* ─────────────────────────────────────────────────────────────────────────
-   Header — brand left, links center, CTA right.
+   Nav — minimal. Brand left, Get the app right. Nothing in the middle.
    ───────────────────────────────────────────────────────────────────────── */
 function SiteHeader() {
   return (
-    <header className="sticky top-0 z-40 bg-bone/85 backdrop-blur border-b border-hairline">
-      <div className="mx-auto max-w-7xl px-6 lg:px-10 h-16 grid grid-cols-3 items-center">
-        <div className="flex items-center">
-          <Link
-            href="/"
-            className="font-extrabold tracking-[-0.04em] text-xl"
-          >
-            Hooked.
-          </Link>
-        </div>
-
-        <nav className="hidden md:flex items-center justify-center gap-10 text-[0.82rem] font-medium">
-          <NavLink href="#how">How it works</NavLink>
-          <NavLink href="#prompts">Prompts</NavLink>
-          <NavLink href="#voices">Voices</NavLink>
-          <NavLink href="#safety">Safety</NavLink>
-        </nav>
-
-        <div className="flex items-center justify-end gap-4">
+    <header className="border-b border-hairline bg-white">
+      <div className="mx-auto max-w-7xl px-6 lg:px-10 h-16 flex items-center justify-between">
+        <Link href="/" className="font-extrabold text-xl tracking-[-0.04em]">
+          Hooked.
+        </Link>
+        <div className="flex items-center gap-5">
           <Link href="/login" className="hidden sm:inline text-sm font-medium hover:text-muted transition">
             Sign in
           </Link>
@@ -86,164 +76,49 @@ function SiteHeader() {
   );
 }
 
-function NavLink({ href, children }: { href: string; children: React.ReactNode }) {
-  return (
-    <Link
-      href={href}
-      className="relative text-ink hover:text-muted transition-colors"
-    >
-      {children}
-    </Link>
-  );
-}
-
 /* ─────────────────────────────────────────────────────────────────────────
-   Hero — Inter doing the headline work via heavy weight + tight tracking
+   Hero — one full-bleed image frame, nothing layered over it.
    ───────────────────────────────────────────────────────────────────────── */
 function Hero() {
   return (
-    <section className="relative grain overflow-hidden">
-      <div className="mx-auto max-w-7xl px-6 lg:px-10 pt-16 pb-20 md:pt-24 md:pb-28">
-        <p className="eyebrow">A quieter dating app</p>
-
-        <div className="mt-8 grid lg:grid-cols-12 gap-12 lg:gap-16 items-start">
-          <div className="lg:col-span-7">
-            <h1 className="display text-[3.25rem] sm:text-[4.5rem] md:text-[6rem] lg:text-[6.75rem]">
-              Designed to be{" "}
-              <span className="display-italic font-medium">read.</span>
-            </h1>
-            <p className="mt-8 max-w-md text-lg leading-relaxed text-ink/85">
-              We replaced the swipe stack with answered prompts. You meet
-              someone the way you would on paper — by what they said, not by
-              how they look in profile.
-            </p>
-            <div className="mt-10 flex flex-wrap gap-3">
-              <Link href="/login" className="btn-ink">Get started</Link>
-              <Link href="#how" className="btn-line">How it works</Link>
-            </div>
-
-            <ul className="mt-14 grid grid-cols-3 max-w-md gap-6 border-t border-hairline pt-6">
-              <li>
-                <p className="display text-3xl">3+</p>
-                <p className="mt-1 text-xs text-muted leading-snug">Prompts per profile</p>
-              </li>
-              <li>
-                <p className="display text-3xl">0</p>
-                <p className="mt-1 text-xs text-muted leading-snug">Drive-by swipes</p>
-              </li>
-              <li>
-                <p className="display text-3xl">1</p>
-                <p className="mt-1 text-xs text-muted leading-snug">Note per hook</p>
-              </li>
-            </ul>
-          </div>
-
-          <div className="lg:col-span-5 relative">
-            <Frame aspect="4/5" label="Portrait" />
-            <article className="card-line absolute -bottom-8 -left-4 sm:-left-10 w-[80%] max-w-[360px] hidden md:block">
-              <div className="p-5">
-                <p className="prompt-q">
-                  Soft launch or hard launch person?
-                </p>
-                <p className="prompt-a mt-3 text-sm leading-relaxed">
-                  Soft launch. Then a blurry photo. Then nothing for a month.
-                  Then a wedding invite. That's the order.
-                </p>
-                <div className="mt-4 pt-3 border-t border-hairline flex items-center justify-between">
-                  <span className="text-[0.65rem] text-muted tracking-[0.18em] uppercase font-semibold">
-                    Hook this prompt
-                  </span>
-                  <span className="btn-ink text-[0.65rem] py-1.5 px-3">Hook</span>
-                </div>
-              </div>
-            </article>
-          </div>
-        </div>
-      </div>
-
-      <div className="border-t border-hairline">
-        <div className="mx-auto max-w-7xl px-6 lg:px-10 py-5 flex items-center justify-between text-xs text-muted font-medium">
-          <span className="eyebrow">No swipes</span>
-          <span className="eyebrow hidden sm:inline">No gradients</span>
-          <span className="eyebrow">No red hearts</span>
-          <span className="eyebrow hidden sm:inline">No vanishing matches</span>
-        </div>
+    <section className="bg-white">
+      <div className="mx-auto max-w-7xl px-6 lg:px-10 pt-10 pb-16 md:pt-14 md:pb-24">
+        <Frame aspect="16/9" label="Hero" rounded />
       </div>
     </section>
   );
 }
 
 /* ─────────────────────────────────────────────────────────────────────────
-   Photo carousel — horizontal scroll-snap row of frames with section heading
+   Statement section — "Date after hours." with hand-drawn circle
    ───────────────────────────────────────────────────────────────────────── */
-function PhotoCarousel() {
-  const frames = [
-    "Window seat", "Saturday", "Old Delhi", "Studio",
-    "Long walk", "Late night", "Festival", "Backseat"
-  ];
+function Statement() {
   return (
-    <section className="border-t border-hairline">
-      <div className="mx-auto max-w-7xl px-6 lg:px-10 pt-20 md:pt-28">
-        <div className="flex flex-wrap items-end justify-between gap-6">
-          <div>
-            <p className="eyebrow">Real evenings</p>
-            <h2 className="display text-4xl md:text-5xl mt-4 max-w-md">
-              The people, not the profile.
-            </h2>
-          </div>
-          <p className="text-sm text-muted max-w-sm">
-            Swipe along to see how members actually use the app — long-form
-            answers, real photos, no filters.
-          </p>
-        </div>
-      </div>
-
-      <div className="mt-12 pb-20 md:pb-28">
-        <div className="overflow-x-auto no-scrollbar snap-x-strip">
-          <div className="flex gap-5 px-6 lg:px-10 min-w-max">
-            {frames.map((label, i) => (
-              <div
-                key={i}
-                className="w-[64vw] sm:w-[40vw] md:w-[28vw] lg:w-[22vw] flex-none"
-              >
-                <Frame aspect="4/5" label={label} />
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
-    </section>
-  );
-}
-
-/* ─────────────────────────────────────────────────────────────────────────
-   Funky statement — white background, oversized type, one word annotated
-   ───────────────────────────────────────────────────────────────────────── */
-function FunkyStatement() {
-  return (
-    <section className="border-t border-hairline" style={{ background: "var(--paper)" }}>
+    <section className="bg-white border-t border-hairline">
       <div className="mx-auto max-w-7xl px-6 lg:px-10 py-24 md:py-36">
-        <p className="eyebrow">Our approach</p>
+        <div className="max-w-4xl">
+          <p className="eyebrow">Our approach</p>
+          <h2 className="mt-8 display text-[3rem] sm:text-[4.5rem] md:text-[6rem] lg:text-[7rem]">
+            Date{" "}
+            <span className="inline-block relative">
+              <span className="display-italic font-medium">after</span>
+              <CircleAnnotation />
+            </span>{" "}
+            hours.
+          </h2>
 
-        <h2 className="mt-8 display text-[3.25rem] sm:text-[5rem] md:text-[7rem] lg:text-[8.5rem]">
-          Date{" "}
-          <span className="inline-block relative">
-            <span className="display-italic font-medium">after</span>
-            <CircleAnnotation />
-          </span>{" "}
-          hours.
-        </h2>
+          <div className="mt-14 flex flex-col md:flex-row md:items-end md:gap-10">
+            <CurlyArrow className="hidden md:block shrink-0 -translate-y-2" />
+            <p className="md:flex-1 max-w-xl text-base md:text-lg leading-relaxed text-ink/85">
+              We don't want you living inside the app. We want you off it, on
+              a walk in Lodhi Garden with someone whose answer to a prompt
+              made you laugh on a Tuesday. The whole product is designed to
+              put you out the door faster.
+            </p>
+          </div>
 
-        <div className="mt-16 grid md:grid-cols-12 gap-10 md:gap-16 items-end">
-          <p className="md:col-span-7 text-lg md:text-xl leading-relaxed text-ink/85 max-w-2xl">
-            We don't want you living inside the app. We want you off it, on a
-            walk in Lodhi Garden with someone whose answer to a prompt made
-            you laugh on a Tuesday. The whole product is designed to put you
-            out the door faster.
-          </p>
-          <div className="md:col-span-5 md:text-right space-y-3">
+          <div className="mt-10">
             <Link href="#how" className="btn-ink">How we do it</Link>
-            <p className="text-xs text-muted">No swipes. No streaks. No nudges at 11 pm.</p>
           </div>
         </div>
       </div>
@@ -251,7 +126,6 @@ function FunkyStatement() {
   );
 }
 
-/* Hand-drawn-looking ellipse around the highlighted word in the headline. */
 function CircleAnnotation() {
   return (
     <svg
@@ -272,149 +146,50 @@ function CircleAnnotation() {
   );
 }
 
-/* ─────────────────────────────────────────────────────────────────────────
-   Three reasons — alternating image + text rows
-   ───────────────────────────────────────────────────────────────────────── */
-function ThreeReasons() {
-  const rows = [
-    {
-      n: "01",
-      title: "Prompts, not poses.",
-      body:
-        "Every profile is built around three answered questions. Pictures are there, but the front door is what they said. People who can write a sentence about themselves are people worth meeting.",
-      label: "Reading"
-    },
-    {
-      n: "02",
-      title: "Hook with intent.",
-      body:
-        "There is no like button. You hook a specific photo or a specific answer — and you can attach a note. Drive-by interest doesn't survive a UI that asks you to be specific.",
-      label: "Coffee"
-    },
-    {
-      n: "03",
-      title: "Chat that respects time.",
-      body:
-        "Conversations live as long as two people keep coming back. If she hasn't replied in an hour, nothing on your side burns down. We don't reward addiction; we reward replying well.",
-      label: "Walking"
-    }
-  ];
+function CurlyArrow({ className = "" }: { className?: string }) {
   return (
-    <section id="how" className="border-t border-hairline">
-      <div className="mx-auto max-w-7xl px-6 lg:px-10 py-24 md:py-32">
-        <div className="max-w-3xl mb-20">
-          <p className="eyebrow">How it works</p>
-          <h2 className="display text-4xl md:text-6xl mt-5">
-            Three small design choices.
-          </h2>
-        </div>
-
-        <ol className="space-y-24 md:space-y-32">
-          {rows.map((r, i) => {
-            const flipped = i % 2 === 1;
-            return (
-              <li
-                key={r.n}
-                className={
-                  "grid md:grid-cols-12 gap-10 md:gap-16 items-center " +
-                  (flipped ? "md:[direction:rtl]" : "")
-                }
-              >
-                <div className={"md:col-span-6 " + (flipped ? "md:[direction:ltr]" : "")}>
-                  <Frame aspect="4/5" label={r.label} />
-                </div>
-                <div className={"md:col-span-6 " + (flipped ? "md:[direction:ltr]" : "")}>
-                  <p className="text-muted font-mono text-sm">{r.n}</p>
-                  <h3 className="display text-3xl md:text-5xl mt-3">{r.title}</h3>
-                  <p className="mt-6 text-ink/85 max-w-prose2 leading-relaxed text-lg">
-                    {r.body}
-                  </p>
-                </div>
-              </li>
-            );
-          })}
-        </ol>
-      </div>
-    </section>
+    <svg width="80" height="64" viewBox="0 0 80 64" fill="none" className={className} aria-hidden>
+      <path
+        d="M 8 8 C 14 26, 28 38, 44 42 C 56 45, 64 44, 72 40"
+        stroke="var(--ink)"
+        strokeWidth="1.8"
+        strokeLinecap="round"
+        fill="none"
+      />
+      <path
+        d="M 72 40 L 64 36 M 72 40 L 66 46"
+        stroke="var(--ink)"
+        strokeWidth="1.8"
+        strokeLinecap="round"
+        fill="none"
+      />
+    </svg>
   );
 }
 
 /* ─────────────────────────────────────────────────────────────────────────
-   Prompt showcase — text cards mixed with photo frames
+   "Labs"-style block: photo on left, eyebrow + heading + paragraph on right
    ───────────────────────────────────────────────────────────────────────── */
-function PromptShowcase() {
-  type Item =
-    | { type: "prompt"; q: string; a: string }
-    | { type: "photo"; label: string };
-  const items: Item[] = [
-    { type: "prompt", q: "We'll get along if…", a: "You have a strong opinion about chai and you're willing to defend it." },
-    { type: "photo", label: "Sunlight" },
-    { type: "prompt", q: "A green flag I look for…", a: "Texts back at a normal speed. No three-minute essays, no three-day silences." },
-    { type: "prompt", q: "I'm weirdly good at…", a: "Parallel parking on the first try. Auto rickshaw negotiations. Crying at songs in languages I don't speak." },
-    { type: "photo", label: "Window seat" },
-    { type: "prompt", q: "I go quiet when…", a: "I'm reading something I love. Ask me what it is — I want to tell you." },
-    { type: "prompt", q: "An unpopular opinion I'll die on", a: "Bombay is just one really long beach with a city draped over it." },
-    { type: "photo", label: "At home" },
-    { type: "prompt", q: "The way to my heart is…", a: "Show up with mangoes in May. Don't make a thing of it." }
-  ];
+function LabsBlock() {
   return (
-    <section id="prompts" className="border-t border-hairline bg-card">
+    <section id="how" className="bg-white border-t border-hairline">
       <div className="mx-auto max-w-7xl px-6 lg:px-10 py-24 md:py-32">
-        <div className="flex flex-wrap items-end justify-between gap-6">
-          <div>
-            <p className="eyebrow">From the prompt bank</p>
-            <h2 className="display text-4xl md:text-6xl mt-4 max-w-xl">
-              Real answers, from real people.
+        <div className="grid md:grid-cols-12 gap-10 md:gap-16 items-center">
+          <div className="md:col-span-6">
+            <Frame aspect="4/3" label="Studio" />
+          </div>
+          <div className="md:col-span-6">
+            <p className="eyebrow">Inside Hooked.</p>
+            <h2 className="mt-4 display text-4xl md:text-5xl lg:text-6xl">
+              We read every<br/>
+              <span className="display-italic font-medium">first message.</span>
             </h2>
-          </div>
-          <p className="text-sm text-muted max-w-sm">
-            Every profile picks three. The questions don't change — the
-            answers do all the work.
-          </p>
-        </div>
-
-        <ul className="mt-16 grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
-          {items.map((it, i) => (
-            <li key={i}>
-              {it.type === "prompt" ? (
-                <div className="card-line p-6 md:p-7 h-full">
-                  <p className="prompt-q">{it.q}</p>
-                  <p className="prompt-a mt-5">{it.a}</p>
-                </div>
-              ) : (
-                <Frame aspect="4/5" label={it.label} />
-              )}
-            </li>
-          ))}
-        </ul>
-      </div>
-    </section>
-  );
-}
-
-/* ─────────────────────────────────────────────────────────────────────────
-   Pull quote — testimonial with portrait beside it
-   ───────────────────────────────────────────────────────────────────────── */
-function PullQuote() {
-  return (
-    <section id="voices" className="border-t border-hairline" style={{ background: "var(--ink)" }}>
-      <div className="mx-auto max-w-7xl px-6 lg:px-10 py-24 md:py-32 text-bone">
-        <p className="eyebrow" style={{ color: "rgba(243,240,233,0.5)" }}>What people say</p>
-
-        <div className="mt-10 grid lg:grid-cols-12 gap-12 lg:gap-16 items-center">
-          <figure className="lg:col-span-8">
-            <blockquote className="display text-3xl md:text-5xl leading-[1.05] text-bone">
-              I deleted four apps before I tried this one. The thing I didn't
-              expect was that I read every profile before I hooked. That's
-              <span className="display-italic font-medium"> never </span>
-              happened to me on a dating app before.
-            </blockquote>
-            <figcaption className="mt-10 text-sm" style={{ color: "rgba(243,240,233,0.65)" }}>
-              <span className="eyebrow" style={{ color: "inherit" }}>Reema · Bombay</span>
-            </figcaption>
-          </figure>
-          <div className="lg:col-span-4">
-            <Frame aspect="4/5" label="Reader" />
+            <p className="mt-6 text-ink/85 max-w-prose2 leading-relaxed text-base md:text-lg">
+              A small team reads anonymised opening messages every week to
+              find what works — and to weed out what shouldn't be on a
+              dating app at all. The work isn't glamorous; it's why the room
+              stays the way it is.
+            </p>
           </div>
         </div>
       </div>
@@ -423,22 +198,56 @@ function PullQuote() {
 }
 
 /* ─────────────────────────────────────────────────────────────────────────
-   Closing CTA
+   Dark testimonial block
    ───────────────────────────────────────────────────────────────────────── */
-function ClosingCta() {
+function DarkTestimonial() {
   return (
-    <section id="safety" className="border-t border-hairline bg-card">
+    <section className="border-t border-hairline" style={{ background: "var(--ink)" }}>
+      <div className="mx-auto max-w-7xl px-6 lg:px-10 py-24 md:py-32 text-white">
+        <p className="eyebrow" style={{ color: "rgba(255,255,255,0.55)" }}>What people say</p>
+        <figure className="mt-10 max-w-4xl">
+          <div className="text-4xl text-white/60 leading-none">"</div>
+          <blockquote className="mt-2 display text-2xl md:text-4xl leading-[1.15] text-white font-bold">
+            I deleted four apps before I tried this one. The thing I didn't
+            expect was that I read every profile before I hooked. That's
+            <span className="display-italic font-medium"> never </span>
+            happened to me on a dating app before.
+          </blockquote>
+          <figcaption className="mt-10 text-sm font-semibold text-white">
+            Reema · Bombay
+          </figcaption>
+        </figure>
+      </div>
+    </section>
+  );
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+   "Work with us" block — heading on left, photo strip on right
+   ───────────────────────────────────────────────────────────────────────── */
+function TeamBlock() {
+  return (
+    <section className="bg-white border-t border-hairline">
       <div className="mx-auto max-w-7xl px-6 lg:px-10 py-24 md:py-32">
-        <div className="grid md:grid-cols-12 gap-10 items-end">
-          <div className="md:col-span-8">
-            <p className="eyebrow">Ready</p>
-            <h2 className="display text-4xl md:text-7xl mt-4 max-w-3xl">
-              Bring your voice. We'll find your reader.
+        <div className="grid md:grid-cols-12 gap-10 md:gap-16 items-end">
+          <div className="md:col-span-5">
+            <p className="eyebrow">Build with us</p>
+            <h2 className="mt-4 display text-4xl md:text-5xl lg:text-6xl">
+              Let's make<br/>
+              <span className="display-italic font-medium">dating boring again.</span>
             </h2>
+            <p className="mt-6 text-ink/85 max-w-md leading-relaxed">
+              We're looking for engineers, designers, and trust-and-safety
+              people who think dating apps are mostly bad and want to help
+              fix one. Six people, hiring two more.
+            </p>
+            <Link href="/careers" className="btn-ink mt-8">Join us</Link>
           </div>
-          <div className="md:col-span-4 md:text-right space-y-3">
-            <Link href="/login" className="btn-ink">Get started</Link>
-            <p className="text-xs text-muted">Email verification only. No app store yet.</p>
+
+          <div className="md:col-span-7 grid grid-cols-3 gap-3 md:gap-4">
+            <Frame aspect="1/1" label="Standup" />
+            <Frame aspect="1/1" label="Lunch" />
+            <Frame aspect="1/1" label="Whiteboard" />
           </div>
         </div>
       </div>
@@ -452,36 +261,35 @@ function ClosingCta() {
 function SiteFooter() {
   const year = new Date().getFullYear();
   return (
-    <footer className="border-t border-hairline">
-      <div className="mx-auto max-w-7xl px-6 lg:px-10 py-16 grid gap-12 md:grid-cols-12">
+    <footer className="bg-white border-t border-hairline">
+      <div className="mx-auto max-w-7xl px-6 lg:px-10 py-14 grid gap-10 md:grid-cols-12">
         <div className="md:col-span-5">
           <Link href="/" className="font-extrabold text-2xl tracking-[-0.04em]">Hooked.</Link>
           <p className="mt-5 max-w-sm text-sm text-muted leading-relaxed">
-            A quieter dating app. Prompts over poses, hooks over swipes, and
+            A quieter dating app. Prompts over poses, hooks over swipes,
             conversations that don't time out on you.
           </p>
         </div>
 
         <div className="md:col-span-2">
-          <p className="eyebrow mb-4">App</p>
+          <p className="eyebrow mb-3">App</p>
           <ul className="space-y-2 text-sm">
             <li><Link href="/login">Sign in</Link></li>
-            <li><Link href="#how">How it works</Link></li>
-            <li><Link href="#prompts">Prompts</Link></li>
+            <li><Link href="/login">Get the app</Link></li>
           </ul>
         </div>
 
         <div className="md:col-span-2">
-          <p className="eyebrow mb-4">Company</p>
+          <p className="eyebrow mb-3">Company</p>
           <ul className="space-y-2 text-sm">
-            <li><Link href="#voices">Voices</Link></li>
-            <li><Link href="/safety">Safety</Link></li>
+            <li><Link href="/careers">Careers</Link></li>
             <li><Link href="/press">Press</Link></li>
+            <li><Link href="/safety">Safety</Link></li>
           </ul>
         </div>
 
         <div className="md:col-span-3">
-          <p className="eyebrow mb-4">Legal</p>
+          <p className="eyebrow mb-3">Legal</p>
           <ul className="space-y-2 text-sm">
             <li><Link href="/terms">Terms</Link></li>
             <li><Link href="/privacy">Privacy</Link></li>

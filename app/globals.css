@@ -3,13 +3,14 @@
 @tailwind utilities;
 
 :root {
-  --bone: #F3F0E9;
-  --card: #FBFAF7;
+  /* Pure white surfaces. Hairline borders do the structural work. */
+  --bone: #FFFFFF;
+  --card: #FFFFFF;
   --paper: #FFFFFF;
   --hairline: #E4DFD4;
   --ink: #1C1B19;
   --muted: #6A6358;
-  --tint: #E8E2D4;
+  --tint: #F1ECE0;
   color-scheme: light;
 }
 
@@ -22,21 +23,15 @@ html, body {
   text-rendering: optimizeLegibility;
 }
 
-::selection { background: var(--ink); color: var(--bone); }
+::selection { background: var(--ink); color: #fff; }
 
-/* Inter doing all the heavy lifting. Weight + tracking + size do the work
-   typography hierarchy usually delegates to a serif. */
 .display {
   font-family: var(--font-sans);
   font-weight: 800;
   letter-spacing: -0.045em;
   line-height: 0.98;
 }
-
-.display-italic {
-  font-style: italic;
-  font-weight: 700;
-}
+.display-italic { font-style: italic; font-weight: 700; }
 
 .eyebrow {
   font-family: var(--font-sans);
@@ -49,14 +44,13 @@ html, body {
 
 .hairline { border-color: var(--hairline); }
 
-/* The single recurring button — solid ink, no alternates. */
 .btn-ink {
   display: inline-flex;
   align-items: center;
   justify-content: center;
   gap: 0.5rem;
   background: var(--ink);
-  color: var(--bone);
+  color: #fff;
   padding: 0.85rem 1.5rem;
   border-radius: 999px;
   font-size: 0.78rem;
@@ -96,7 +90,6 @@ html, body {
 }
 .btn-quiet:hover { opacity: 0.7; }
 
-/* Form primitives — bare, hairline bottom edge. */
 .field {
   width: 100%;
   background: transparent;
@@ -134,25 +127,10 @@ textarea.field { min-height: 6rem; resize: vertical; line-height: 1.55; }
   color: var(--ink);
 }
 
-.prompt-a {
-  font-size: 1.05rem;
-  line-height: 1.55;
-  color: var(--ink);
-}
+.prompt-a { font-size: 1.05rem; line-height: 1.55; color: var(--ink); }
 
-.grain {
-  background-image: radial-gradient(rgba(28,27,25,0.045) 1px, transparent 1px);
-  background-size: 4px 4px;
-}
-
-/* Carousel scroll behaviour — used on the photo strip. */
 .no-scrollbar { scrollbar-width: none; -ms-overflow-style: none; }
 .no-scrollbar::-webkit-scrollbar { display: none; }
-.snap-x-strip {
-  scroll-snap-type: x mandatory;
-  -webkit-overflow-scrolling: touch;
-}
-.snap-x-strip > * { scroll-snap-align: start; }
 
 :focus-visible {
   outline: 2px solid var(--ink);
