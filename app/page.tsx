@@ -26,15 +26,19 @@ export default function Landing() {
    ───────────────────────────────────────────────────────────────────────── */
 function Hero() {
   return (
-    <section className="relative w-full h-screen overflow-hidden">
-      <Image
-        src={HERO_IMAGE}
-        alt=""
-        fill
-        priority
-        sizes="100vw"
-        className="object-cover"
-      />
+    <section className="relative w-full h-screen overflow-hidden bg-tint">
+      <span
+        className="absolute top-4 left-4"
+        style={{
+          fontSize: "0.6rem",
+          letterSpacing: "0.22em",
+          textTransform: "uppercase",
+          color: "var(--muted)",
+          fontWeight: 600
+        }}
+      >
+        Hero
+      </span>
     </section>
   );
 }
@@ -148,7 +152,18 @@ function LabsBlock() {
       <div className="mx-auto max-w-7xl px-6 lg:px-10 py-24 md:py-32">
         <div className="grid md:grid-cols-12 gap-10 md:gap-16 items-center">
           <div className="md:col-span-6">
-            <Frame aspect="4/3" label="Studio" />
+            <div
+              className="relative w-full overflow-hidden rounded-[4px] border border-hairline"
+              style={{ aspectRatio: "4/3", boxShadow: "0 1px 3px rgba(0,0,0,0.06)" }}
+            >
+              <Image
+                src={HERO_IMAGE}
+                alt=""
+                fill
+                sizes="(min-width:768px) 50vw, 100vw"
+                className="object-cover"
+              />
+            </div>
           </div>
           <div className="md:col-span-6">
             <p className="eyebrow">Inside Hooked.</p>
