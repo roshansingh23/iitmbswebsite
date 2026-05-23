@@ -132,6 +132,38 @@ textarea.field { min-height: 6rem; resize: vertical; line-height: 1.55; }
 .no-scrollbar { scrollbar-width: none; -ms-overflow-style: none; }
 .no-scrollbar::-webkit-scrollbar { display: none; }
 
+/* ── Marquee — auto-scrolling right-to-left row of frames ───────────── */
+@keyframes marquee-left {
+  from { transform: translateX(0); }
+  to   { transform: translateX(-50%); }
+}
+.marquee-row {
+  display: flex;
+  gap: 1rem;
+  width: max-content;
+  animation: marquee-left var(--marquee-speed, 60s) linear infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  .marquee-row { animation: none; }
+}
+/* Fade the inside edges so frames fade in/out as they cross the column */
+.marquee-mask {
+  -webkit-mask-image: linear-gradient(
+    to right,
+    transparent 0,
+    #000 4%,
+    #000 96%,
+    transparent 100%
+  );
+  mask-image: linear-gradient(
+    to right,
+    transparent 0,
+    #000 4%,
+    #000 96%,
+    transparent 100%
+  );
+}
+
 :focus-visible {
   outline: 2px solid var(--ink);
   outline-offset: 2px;

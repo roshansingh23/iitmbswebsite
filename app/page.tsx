@@ -1,6 +1,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { ScrollNav } from "@/components/scroll-nav";
+import { DateSpots } from "@/components/date-spots";
 
 const HERO_IMAGE =
   "https://media.istockphoto.com/id/1857979915/photo/happy-and-young-tourist-couple-enjoying-a-romantic-getaway-in-iconic-streets-of-london-city.jpg?s=612x612&w=0&k=20&c=BlyBxNeD9UV-jQviTMtGRsDmJA6uzullIloq8tywgAE=";
@@ -14,7 +15,7 @@ export default function Landing() {
         <Statement />
         <LabsBlock />
         <DarkTestimonial />
-        <TeamBlock />
+        <DateSpots />
       </main>
       <SiteFooter />
     </div>
@@ -200,39 +201,6 @@ function DarkTestimonial() {
             Reema · Bombay
           </figcaption>
         </figure>
-      </div>
-    </section>
-  );
-}
-
-/* ─────────────────────────────────────────────────────────────────────────
-   Build-with-us block
-   ───────────────────────────────────────────────────────────────────────── */
-function TeamBlock() {
-  return (
-    <section className="bg-white">
-      <div className="mx-auto max-w-7xl px-6 lg:px-10 py-24 md:py-32">
-        <div className="grid md:grid-cols-12 gap-10 md:gap-16 items-end">
-          <div className="md:col-span-5">
-            <p className="eyebrow">Build with us</p>
-            <h2 className="mt-4 display text-4xl md:text-5xl lg:text-6xl">
-              Let's make<br/>
-              <span className="display-italic font-medium">dating boring again.</span>
-            </h2>
-            <p className="mt-6 text-ink/85 max-w-md leading-relaxed">
-              We're looking for engineers, designers, and trust-and-safety
-              people who think dating apps are mostly bad and want to help
-              fix one. Six people, hiring two more.
-            </p>
-            <Link href="/careers" className="btn-ink mt-8">Join us</Link>
-          </div>
-
-          <div className="md:col-span-7 grid grid-cols-3 gap-3 md:gap-4">
-            <Frame aspect="1/1" label="Standup" />
-            <Frame aspect="1/1" label="Lunch" />
-            <Frame aspect="1/1" label="Whiteboard" />
-          </div>
-        </div>
       </div>
     </section>
   );
