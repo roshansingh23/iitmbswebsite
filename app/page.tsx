@@ -79,9 +79,19 @@ function Statement() {
   return (
     <section className="bg-white">
       <div className="mx-auto max-w-7xl px-6 lg:px-10 py-24 md:py-36">
-        <div className="max-w-4xl">
-          <p className="eyebrow">Our approach</p>
-          <h2 className="mt-8 display text-[3rem] sm:text-[4.5rem] md:text-[6rem] lg:text-[7rem]">
+        <div className="max-w-5xl">
+          <p
+            style={{
+              fontSize: "0.85rem",
+              letterSpacing: "0.22em",
+              textTransform: "uppercase",
+              color: "var(--muted)",
+              fontWeight: 600
+            }}
+          >
+            Our approach
+          </p>
+          <h2 className="mt-10 display text-[3.5rem] sm:text-[5rem] md:text-[7rem] lg:text-[8.5rem]">
             Date{" "}
             <span className="inline-block relative">
               <span className="display-italic font-medium">after</span>
@@ -89,8 +99,18 @@ function Statement() {
             </span>{" "}
             hours.
           </h2>
-          <div className="mt-10">
-            <Link href="#how" className="btn-ink">How we do it</Link>
+          <div className="mt-14">
+            <Link
+              href="#how"
+              className="inline-flex items-center justify-center gap-2 bg-ink text-white rounded-full font-semibold transition hover:opacity-90"
+              style={{
+                padding: "1.25rem 2.5rem",
+                fontSize: "1rem",
+                letterSpacing: "0.06em"
+              }}
+            >
+              How we do it
+            </Link>
           </div>
         </div>
       </div>
