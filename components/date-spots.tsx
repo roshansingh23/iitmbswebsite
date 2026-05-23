@@ -76,10 +76,6 @@ export function DateSpots() {
             Spend time with<br/>
             <span className="display-italic font-medium">your date.</span>
           </h2>
-          <p className="mt-6 max-w-xl text-base md:text-lg leading-relaxed text-ink/85">
-            A short list of places people on the app actually go. Pick one,
-            put your phone away, and let the conversation do the rest.
-          </p>
         </div>
 
         <div className="mt-14 space-y-5">

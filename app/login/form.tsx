@@ -9,29 +9,19 @@ import { Button } from "@/components/ui/button";
 // Map of NextAuth error codes to user-facing messages. Specific enough to
 // actually debug a misconfiguration, but never leaks who is/isn't allowed.
 const ERROR_MESSAGES: Record<string, string> = {
-  Configuration:
-    "Sign-in isn't configured. Set GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, NEXTAUTH_SECRET, and DATABASE_URL in your environment, then redeploy.",
-  AccessDenied:
-    "This email can't be used to sign up.",
-  Verification:
-    "That link expired. Request a new one.",
-  OAuthSignin:
-    "Couldn't start Google sign-in. Confirm GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET are set in your environment.",
-  OAuthCallback:
-    "Google sign-in failed at the callback. Check the Authorised redirect URI in your Google Cloud Console matches: /api/auth/callback/google on this domain.",
-  OAuthCreateAccount:
-    "Couldn't create your account. Check that DATABASE_URL points to a running Postgres and the schema is applied.",
-  EmailCreateAccount:
-    "Couldn't create your account. Check that DATABASE_URL points to a running Postgres.",
-  Callback:
-    "Sign-in failed during the callback step. Try again.",
-  OAuthAccountNotLinked:
-    "This Google account is linked to a different sign-in method. Use the original one.",
-  EmailSignin:
-    "This email can't be used to sign up.",
+  Configuration: "Sign-in isn't configured.",
+  AccessDenied: "This email can't be used.",
+  Verification: "Link expired.",
+  OAuthSignin: "Google sign-in failed.",
+  OAuthCallback: "Google sign-in failed.",
+  OAuthCreateAccount: "Couldn't create your account.",
+  EmailCreateAccount: "Couldn't create your account.",
+  Callback: "Sign-in failed.",
+  OAuthAccountNotLinked: "Use your original sign-in method.",
+  EmailSignin: "This email can't be used.",
   CredentialsSignin: "Sign-in failed.",
-  SessionRequired: "Please sign in to continue.",
-  Default: "Something went wrong. Try again."
+  SessionRequired: "Please sign in.",
+  Default: "Something went wrong."
 };
 
 export function LoginForm() {

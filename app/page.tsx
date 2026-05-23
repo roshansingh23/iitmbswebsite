@@ -90,17 +90,6 @@ function Statement() {
             </span>{" "}
             hours.
           </h2>
-
-          <div className="mt-14 flex flex-col md:flex-row md:items-end md:gap-10">
-            <CurlyArrow className="hidden md:block shrink-0 -translate-y-2" />
-            <p className="md:flex-1 max-w-xl text-base md:text-lg leading-relaxed text-ink/85">
-              We don't want you living inside the app. We want you off it, on
-              a walk in Lodhi Garden with someone whose answer to a prompt
-              made you laugh on a Tuesday. The whole product is designed to
-              put you out the door faster.
-            </p>
-          </div>
-
           <div className="mt-10">
             <Link href="#how" className="btn-ink">How we do it</Link>
           </div>
@@ -168,12 +157,6 @@ function LabsBlock() {
               We read every<br/>
               <span className="display-italic font-medium">first message.</span>
             </h2>
-            <p className="mt-6 text-ink/85 max-w-prose2 leading-relaxed text-base md:text-lg">
-              A small team reads anonymised opening messages every week to
-              find what works — and to weed out what shouldn't be on a
-              dating app at all. The work isn't glamorous; it's why the room
-              stays the way it is.
-            </p>
           </div>
         </div>
       </div>
@@ -216,10 +199,6 @@ function SiteFooter() {
       <div className="mx-auto max-w-7xl px-6 lg:px-10 py-14 grid gap-10 md:grid-cols-12">
         <div className="md:col-span-5">
           <Link href="/" className="font-extrabold text-2xl tracking-[-0.04em]">Hooked.</Link>
-          <p className="mt-5 max-w-sm text-sm text-muted leading-relaxed">
-            A quieter dating app. Prompts over poses, hooks over swipes,
-            conversations that don't time out on you.
-          </p>
         </div>
 
         <div className="md:col-span-2">
