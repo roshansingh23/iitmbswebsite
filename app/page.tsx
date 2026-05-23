@@ -1,10 +1,15 @@
+import Image from "next/image";
 import Link from "next/link";
+import { ScrollNav } from "@/components/scroll-nav";
+
+const HERO_IMAGE =
+  "https://media.istockphoto.com/id/1857979915/photo/happy-and-young-tourist-couple-enjoying-a-romantic-getaway-in-iconic-streets-of-london-city.jpg?s=612x612&w=0&k=20&c=BlyBxNeD9UV-jQviTMtGRsDmJA6uzullIloq8tywgAE=";
 
 export default function Landing() {
   return (
-    <div className="min-h-screen flex flex-col bg-white">
-      <SiteHeader />
-      <main className="flex-1">
+    <div className="min-h-screen bg-white flex flex-col">
+      <ScrollNav />
+      <main>
         <Hero />
         <Statement />
         <LabsBlock />
@@ -17,26 +22,38 @@ export default function Landing() {
 }
 
 /* ─────────────────────────────────────────────────────────────────────────
-   Empty image frame
+   Hero — full viewport height, photo edge-to-edge
+   ───────────────────────────────────────────────────────────────────────── */
+function Hero() {
+  return (
+    <section className="relative w-full h-screen overflow-hidden">
+      <Image
+        src={HERO_IMAGE}
+        alt=""
+        fill
+        priority
+        sizes="100vw"
+        className="object-cover"
+      />
+    </section>
+  );
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+   Reusable image frame for the smaller slots below the hero
    ───────────────────────────────────────────────────────────────────────── */
 function Frame({
   aspect = "4/5",
   label = "Photo",
-  className = "",
-  rounded = true
+  className = ""
 }: {
   aspect?: string;
   label?: string;
   className?: string;
-  rounded?: boolean;
 }) {
   return (
     <div
-      className={
-        "bg-tint border border-hairline relative overflow-hidden " +
-        (rounded ? "rounded-[4px] " : "") +
-        className
-      }
+      className={"bg-tint border border-hairline relative overflow-hidden rounded-[4px] " + className}
       style={{ aspectRatio: aspect, boxShadow: "0 1px 3px rgba(0,0,0,0.06)" }}
     >
       <span
@@ -56,45 +73,11 @@ function Frame({
 }
 
 /* ─────────────────────────────────────────────────────────────────────────
-   Nav — minimal. Brand left, Get the app right. Nothing in the middle.
-   ───────────────────────────────────────────────────────────────────────── */
-function SiteHeader() {
-  return (
-    <header className="border-b border-hairline bg-white">
-      <div className="mx-auto max-w-7xl px-6 lg:px-10 h-16 flex items-center justify-between">
-        <Link href="/" className="font-extrabold text-xl tracking-[-0.04em]">
-          Hooked.
-        </Link>
-        <div className="flex items-center gap-5">
-          <Link href="/login" className="hidden sm:inline text-sm font-medium hover:text-muted transition">
-            Sign in
-          </Link>
-          <Link href="/login" className="btn-ink">Get the app</Link>
-        </div>
-      </div>
-    </header>
-  );
-}
-
-/* ─────────────────────────────────────────────────────────────────────────
-   Hero — one full-bleed image frame, nothing layered over it.
-   ───────────────────────────────────────────────────────────────────────── */
-function Hero() {
-  return (
-    <section className="bg-white">
-      <div className="mx-auto max-w-7xl px-6 lg:px-10 pt-10 pb-16 md:pt-14 md:pb-24">
-        <Frame aspect="16/9" label="Hero" rounded />
-      </div>
-    </section>
-  );
-}
-
-/* ─────────────────────────────────────────────────────────────────────────
-   Statement section — "Date after hours." with hand-drawn circle
+   Statement
    ───────────────────────────────────────────────────────────────────────── */
 function Statement() {
   return (
-    <section className="bg-white border-t border-hairline">
+    <section className="bg-white">
       <div className="mx-auto max-w-7xl px-6 lg:px-10 py-24 md:py-36">
         <div className="max-w-4xl">
           <p className="eyebrow">Our approach</p>
@@ -168,11 +151,11 @@ function CurlyArrow({ className = "" }: { className?: string }) {
 }
 
 /* ─────────────────────────────────────────────────────────────────────────
-   "Labs"-style block: photo on left, eyebrow + heading + paragraph on right
+   Photo-left, text-right block
    ───────────────────────────────────────────────────────────────────────── */
 function LabsBlock() {
   return (
-    <section id="how" className="bg-white border-t border-hairline">
+    <section id="how" className="bg-white">
       <div className="mx-auto max-w-7xl px-6 lg:px-10 py-24 md:py-32">
         <div className="grid md:grid-cols-12 gap-10 md:gap-16 items-center">
           <div className="md:col-span-6">
@@ -198,11 +181,11 @@ function LabsBlock() {
 }
 
 /* ─────────────────────────────────────────────────────────────────────────
-   Dark testimonial block
+   Dark testimonial
    ───────────────────────────────────────────────────────────────────────── */
 function DarkTestimonial() {
   return (
-    <section className="border-t border-hairline" style={{ background: "var(--ink)" }}>
+    <section style={{ background: "var(--ink)" }}>
       <div className="mx-auto max-w-7xl px-6 lg:px-10 py-24 md:py-32 text-white">
         <p className="eyebrow" style={{ color: "rgba(255,255,255,0.55)" }}>What people say</p>
         <figure className="mt-10 max-w-4xl">
@@ -223,11 +206,11 @@ function DarkTestimonial() {
 }
 
 /* ─────────────────────────────────────────────────────────────────────────
-   "Work with us" block — heading on left, photo strip on right
+   Build-with-us block
    ───────────────────────────────────────────────────────────────────────── */
 function TeamBlock() {
   return (
-    <section className="bg-white border-t border-hairline">
+    <section className="bg-white">
       <div className="mx-auto max-w-7xl px-6 lg:px-10 py-24 md:py-32">
         <div className="grid md:grid-cols-12 gap-10 md:gap-16 items-end">
           <div className="md:col-span-5">
@@ -256,12 +239,12 @@ function TeamBlock() {
 }
 
 /* ─────────────────────────────────────────────────────────────────────────
-   Footer
+   Footer — no top border
    ───────────────────────────────────────────────────────────────────────── */
 function SiteFooter() {
   const year = new Date().getFullYear();
   return (
-    <footer className="bg-white border-t border-hairline">
+    <footer className="bg-white">
       <div className="mx-auto max-w-7xl px-6 lg:px-10 py-14 grid gap-10 md:grid-cols-12">
         <div className="md:col-span-5">
           <Link href="/" className="font-extrabold text-2xl tracking-[-0.04em]">Hooked.</Link>
@@ -298,11 +281,9 @@ function SiteFooter() {
         </div>
       </div>
 
-      <div className="border-t border-hairline">
-        <div className="mx-auto max-w-7xl px-6 lg:px-10 h-14 flex items-center justify-between text-xs text-muted">
-          <span>© {year} Hooked.</span>
-          <span>Made in India.</span>
-        </div>
+      <div className="mx-auto max-w-7xl px-6 lg:px-10 h-14 flex items-center justify-between text-xs text-muted">
+        <span>© {year} Hooked.</span>
+        <span>Made in India.</span>
       </div>
     </footer>
   );
