@@ -1,65 +1,76 @@
-// Marquee of date spots scrolling right-to-left. Each row is duplicated so
-// the loop is seamless. The component is intentionally placed inside the
-// same max-width container as the heading so the side-fade aligns with the
-// heading column instead of running to the page edge.
+import Image from "next/image";
 
-const ROW_ONE = [
-  "Besant Nagar Beach",
-  "Elliot's Beach",
-  "Theosophical Society",
-  "Amethyst, Royapettah",
-  "Writer's Cafe",
-  "Mylapore Tank",
-  "Marina at sunrise",
-  "Mahabalipuram"
+type Spot = { label: string; src?: string };
+
+const ROW_ONE: Spot[] = [
+  {
+    label: "Besant Nagar Beach",
+    src: "https://eddinscounseling.com/wp-content/uploads/17-Social-Distancing-Date-Night-Activities-960x640.jpg"
+  },
+  { label: "Elliot's Beach" },
+  { label: "Theosophical Society" },
+  { label: "Amethyst, Royapettah" },
+  { label: "Writer's Cafe" },
+  { label: "Mylapore Tank" },
+  { label: "Marina at sunrise" },
+  { label: "Mahabalipuram" }
 ];
 
-const ROW_TWO = [
-  "Cholamandal Village",
-  "Anna Centenary Library",
-  "Adyar Boardwalk",
-  "Pondicherry promenade",
-  "Higginbothams",
-  "DakshinaChitra",
-  "Kalakshetra",
-  "Sandy's Chocolate Lab"
+const ROW_TWO: Spot[] = [
+  { label: "Cholamandal Village" },
+  { label: "Anna Centenary Library" },
+  { label: "Adyar Boardwalk" },
+  { label: "Pondicherry promenade" },
+  { label: "Higginbothams" },
+  { label: "DakshinaChitra" },
+  { label: "Kalakshetra" },
+  { label: "Sandy's Chocolate Lab" }
 ];
 
-function Tile({ label }: { label: string }) {
+function Tile({ spot }: { spot: Spot }) {
   return (
     <figure className="shrink-0 w-[260px] sm:w-[300px] md:w-[340px]">
       <div
         className="bg-tint border border-hairline rounded-[4px] overflow-hidden relative"
         style={{ aspectRatio: "4/3", boxShadow: "0 1px 3px rgba(0,0,0,0.06)" }}
       >
-        <span
-          className="absolute top-3 left-3"
-          style={{
-            fontSize: "0.55rem",
-            letterSpacing: "0.22em",
-            textTransform: "uppercase",
-            color: "var(--muted)",
-            fontWeight: 600
-          }}
-        >
-          Photo
-        </span>
+        {spot.src ? (
+          <Image
+            src={spot.src}
+            alt={spot.label}
+            fill
+            sizes="340px"
+            className="object-cover"
+          />
+        ) : (
+          <span
+            className="absolute top-3 left-3"
+            style={{
+              fontSize: "0.55rem",
+              letterSpacing: "0.22em",
+              textTransform: "uppercase",
+              color: "var(--muted)",
+              fontWeight: 600
+            }}
+          >
+            Photo
+          </span>
+        )}
       </div>
       <figcaption className="mt-3 text-sm font-medium text-ink tracking-[-0.005em]">
-        {label}
+        {spot.label}
       </figcaption>
     </figure>
   );
 }
 
-function Row({ items, speed }: { items: string[]; speed: string }) {
-  // Duplicate so the marquee loops without a visible jump.
+function Row({ items, speed }: { items: Spot[]; speed: string }) {
   const doubled = [...items, ...items];
   return (
     <div className="marquee-mask overflow-hidden">
       <div className="marquee-row" style={{ ["--marquee-speed" as any]: speed }}>
-        {doubled.map((label, i) => (
-          <Tile key={i} label={label} />
+        {doubled.map((s, i) => (
+          <Tile key={i} spot={s} />
         ))}
       </div>
     </div>
