@@ -6,43 +6,37 @@ import { ProfileCard, type Candidate } from "./profile-card";
 
 export function DiscoverDeck({ candidates }: { candidates: Candidate[] }) {
   const [idx, setIdx] = useState(0);
-  const [busy, setBusy] = useState<"hook" | "pass" | null>(null);
 
   const current = candidates[idx];
 
-  async function pass() {
-    if (!current || busy) return;
-    setBusy("pass");
-    // Advance optimistically; record the pass in the background.
+  // Fire-and-forget. Deck advances on tap, server uses onConflict-do-nothing
+  // so duplicate submits are harmless. No await => button feels instant.
+  function pass() {
+    if (!current) return;
+    const id = current.id;
     setIdx((i) => i + 1);
-    try {
-      await fetch("/api/passes", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ toUserId: current.id })
-      });
-    } catch {}
-    setBusy(null);
+    fetch("/api/passes", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ toUserId: id })
+    }).catch(() => {});
   }
 
-  async function hook() {
-    if (!current || busy) return;
-    setBusy("hook");
+  function hook() {
+    if (!current) return;
+    const id = current.id;
     setIdx((i) => i + 1);
-    try {
-      await fetch("/api/hooks", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          toUserId: current.id,
-          targetType: "profile",
-          targetId: null,
-          note: null,
-          isHardHook: false
-        })
-      });
-    } catch {}
-    setBusy(null);
+    fetch("/api/hooks", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        toUserId: id,
+        targetType: "profile",
+        targetId: null,
+        note: null,
+        isHardHook: false
+      })
+    }).catch(() => {});
   }
 
   if (!current) {
@@ -70,20 +64,26 @@ export function DiscoverDeck({ candidates }: { candidates: Candidate[] }) {
           <button
             type="button"
             onClick={pass}
-            disabled={busy !== null}
             aria-label="Pass"
-            className="pointer-events-auto w-14 h-14 rounded-full bg-white border border-hairline flex items-center justify-center transition active:scale-95 disabled:opacity-60"
-            style={{ boxShadow: "0 4px 16px rgba(0,0,0,0.12)" }}
+            className="pointer-events-auto w-14 h-14 rounded-full bg-white border border-hairline flex items-center justify-center transition-transform duration-100 active:scale-90"
+            style={{
+              boxShadow: "0 4px 16px rgba(0,0,0,0.12)",
+              touchAction: "manipulation",
+              WebkitTapHighlightColor: "transparent"
+            }}
           >
             <XIcon size={26} strokeWidth={2.25} className="text-ink" />
           </button>
           <button
             type="button"
             onClick={hook}
-            disabled={busy !== null}
             aria-label="Hook"
-            className="pointer-events-auto w-14 h-14 rounded-full bg-white border border-hairline flex items-center justify-center transition active:scale-95 disabled:opacity-60"
-            style={{ boxShadow: "0 4px 16px rgba(0,0,0,0.12)" }}
+            className="pointer-events-auto w-14 h-14 rounded-full bg-white border border-hairline flex items-center justify-center transition-transform duration-100 active:scale-90"
+            style={{
+              boxShadow: "0 4px 16px rgba(0,0,0,0.12)",
+              touchAction: "manipulation",
+              WebkitTapHighlightColor: "transparent"
+            }}
           >
             <HeartIcon size={26} strokeWidth={2} className="text-ink" />
           </button>

@@ -79,6 +79,24 @@ export function rankCandidates<C extends CandidateInput>(
   });
 
   scored.sort((a, b) => b._score - a._score);
+
+  // Band-shuffle: profiles whose scores are within BAND of each other get
+  // their order randomized each render. Without this the same top-5 lock
+  // at the top of the deck across reloads — quality stays high but two
+  // visits to /discover feel fresh instead of identical.
+  const BAND = 3;
+  let bandStart = 0;
+  for (let i = 1; i <= scored.length; i++) {
+    if (i === scored.length || scored[bandStart]._score - scored[i]._score > BAND) {
+      // Fisher–Yates shuffle on [bandStart, i)
+      for (let j = i - 1; j > bandStart; j--) {
+        const k = bandStart + Math.floor(Math.random() * (j - bandStart + 1));
+        [scored[j], scored[k]] = [scored[k], scored[j]];
+      }
+      bandStart = i;
+    }
+  }
+
   return scored.slice(0, limit);
 }
 
