@@ -4,31 +4,14 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Compass, Bookmark, MessageSquareText, Quote, CircleUser } from "lucide-react";
 
-// Mobile shell. Thin top bar with the brand on the left, black bottom nav
-// with five tabs.
+// Mobile-only shell. No top bar — the brand only lives on the marketing
+// homepage. Black bottom nav with five tabs is the only chrome.
 export function AppShell({ children }: { children: React.ReactNode }) {
   return (
     <div className="min-h-screen bg-white flex flex-col">
-      <TopBar />
-      <main className="flex-1 mx-auto w-full max-w-md pb-24 pt-12">{children}</main>
+      <main className="flex-1 mx-auto w-full max-w-md pb-24">{children}</main>
       <BottomNav />
     </div>
-  );
-}
-
-function TopBar() {
-  return (
-    <header className="fixed top-0 inset-x-0 z-30 bg-white border-b border-hairline">
-      <div className="mx-auto max-w-md h-12 px-4 flex items-center">
-        <Link
-          href="/discover"
-          className="font-extrabold text-lg tracking-[-0.045em] text-ink"
-          style={{ touchAction: "manipulation" }}
-        >
-          Mismatched.
-        </Link>
-      </div>
-    </header>
   );
 }
 
