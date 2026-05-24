@@ -1,6 +1,6 @@
 import { notFound, redirect } from "next/navigation";
-import { db } from "@/lib/db";
 import { getSessionUser } from "@/lib/session";
+import { supabaseAdmin } from "@/lib/supabase-server";
 import { AppShell } from "@/components/app-shell";
 import { ChatRoom } from "./room";
 
@@ -10,37 +10,46 @@ export default async function ChatPage({ params }: { params: { id: string } }) {
   const me = await getSessionUser();
   if (!me) redirect("/login");
 
-  const conv = await db.conversation.findUnique({
-    where: { id: params.id },
-    include: {
-      userA: { select: { id: true, name: true } },
-      userB: { select: { id: true, name: true } },
-      messages: { orderBy: { createdAt: "asc" }, take: 200 }
-    }
-  });
-  if (!conv) notFound();
-  if (conv.userAId !== me.id && conv.userBId !== me.id) notFound();
+  const admin = supabaseAdmin();
+  if (!admin) notFound();
 
-  const other = conv.userAId === me.id ? conv.userB : conv.userA;
+  const { data: conv } = await admin
+    .from("Conversation")
+    .select(
+      "id,userAId,userBId,locked,interactionSeconds,capSeconds," +
+      "userA:User!Conversation_userAId_fkey(id,name)," +
+      "userB:User!Conversation_userBId_fkey(id,name)"
+    )
+    .eq("id", params.id)
+    .maybeSingle();
+
+  if (!conv) notFound();
+  if ((conv as any).userAId !== me.id && (conv as any).userBId !== me.id) notFound();
+
+  const { data: messages } = await admin
+    .from("Message")
+    .select("id,body,fromUserId,createdAt")
+    .eq("conversationId", params.id)
+    .order("createdAt", { ascending: true })
+    .limit(200);
+
+  const other = (conv as any).userAId === me.id ? (conv as any).userB : (conv as any).userA;
 
   return (
     <AppShell>
-      <div className="mx-auto max-w-3xl px-6 lg:px-10 py-8">
-        <header className="border-b border-hairline pb-6">
-          <p className="eyebrow">Hooked</p>
-          <h1 className="display text-4xl mt-2">{other.name ?? "—"}</h1>
+      <div className="px-4 pt-4 pb-12">
+        <header className="border-b border-hairline pb-3">
+          <h1 className="font-extrabold text-2xl tracking-[-0.03em]">{other?.name ?? "—"}</h1>
         </header>
 
         <ChatRoom
-          conversationId={conv.id}
+          conversationId={(conv as any).id}
           meId={me.id}
-          otherName={other.name ?? "—"}
-          initialMessages={conv.messages.map((m) => ({
-            id: m.id, body: m.body, fromUserId: m.fromUserId, createdAt: m.createdAt.toISOString()
+          otherName={other?.name ?? "—"}
+          initialMessages={(messages ?? []).map((m: any) => ({
+            id: m.id, body: m.body, fromUserId: m.fromUserId,
+            createdAt: typeof m.createdAt === "string" ? m.createdAt : new Date(m.createdAt).toISOString()
           }))}
-          initialLocked={conv.locked}
-          initialInteractionSeconds={conv.interactionSeconds}
-          capSeconds={conv.capSeconds}
         />
       </div>
     </AppShell>

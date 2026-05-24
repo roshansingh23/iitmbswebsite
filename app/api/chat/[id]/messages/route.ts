@@ -1,37 +1,56 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { db } from "@/lib/db";
 import { requireUser } from "@/lib/session";
-import { recordActivityAndMaybeTick, sideOf } from "@/lib/chat-timekeeper";
-import { supabaseBroadcast } from "@/lib/supabase-server";
+import { supabaseAdmin, supabaseBroadcast } from "@/lib/supabase-server";
 
 export const runtime = "nodejs";
 
 const schema = z.object({ body: z.string().min(1).max(1000) });
 
+function cuid() {
+  return "c" + Math.random().toString(36).slice(2, 14) + Math.random().toString(36).slice(2, 14);
+}
+
+async function ownerSide(conversationId: string, userId: string) {
+  const admin = supabaseAdmin();
+  if (!admin) return null;
+  const { data: conv } = await admin
+    .from("Conversation")
+    .select("id,userAId,userBId")
+    .eq("id", conversationId)
+    .maybeSingle();
+  if (!conv) return null;
+  if ((conv as any).userAId === userId) return "A" as const;
+  if ((conv as any).userBId === userId) return "B" as const;
+  return null;
+}
+
 export async function GET(req: Request, { params }: { params: { id: string } }) {
   const me = await requireUser().catch(() => null);
   if (!me) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
+  const admin = supabaseAdmin();
+  if (!admin) return NextResponse.json({ error: "server misconfigured" }, { status: 503 });
 
-  const conv = await db.conversation.findUnique({
-    where: { id: params.id },
-    select: { id: true, userAId: true, userBId: true }
-  });
-  if (!conv) return NextResponse.json({ error: "not found" }, { status: 404 });
-  if (!sideOf(conv, me.id)) return NextResponse.json({ error: "forbidden" }, { status: 403 });
+  if (!(await ownerSide(params.id, me.id))) {
+    return NextResponse.json({ error: "forbidden" }, { status: 403 });
+  }
 
   const after = new URL(req.url).searchParams.get("after") ?? undefined;
-  const where: any = { conversationId: conv.id };
+  let q = admin.from("Message")
+    .select("id,body,fromUserId,createdAt")
+    .eq("conversationId", params.id)
+    .order("createdAt", { ascending: true })
+    .limit(100);
+
   if (after) {
-    const anchor = await db.message.findUnique({ where: { id: after }, select: { createdAt: true } });
-    if (anchor) where.createdAt = { gt: anchor.createdAt };
+    const { data: anchor } = await admin.from("Message").select("createdAt").eq("id", after).maybeSingle();
+    if (anchor) q = q.gt("createdAt", (anchor as any).createdAt);
   }
-  const messages = await db.message.findMany({
-    where, orderBy: { createdAt: "asc" }, take: 100
-  });
+  const { data: messages } = await q;
   return NextResponse.json({
-    messages: messages.map((m) => ({
-      id: m.id, body: m.body, fromUserId: m.fromUserId, createdAt: m.createdAt.toISOString()
+    messages: (messages ?? []).map((m: any) => ({
+      id: m.id, body: m.body, fromUserId: m.fromUserId,
+      createdAt: typeof m.createdAt === "string" ? m.createdAt : new Date(m.createdAt).toISOString()
     }))
   });
 }
@@ -39,32 +58,37 @@ export async function GET(req: Request, { params }: { params: { id: string } }) 
 export async function POST(req: Request, { params }: { params: { id: string } }) {
   const me = await requireUser().catch(() => null);
   if (!me) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
+  const admin = supabaseAdmin();
+  if (!admin) return NextResponse.json({ error: "server misconfigured" }, { status: 503 });
 
   const parsed = schema.safeParse(await req.json());
   if (!parsed.success) return NextResponse.json({ error: "Invalid" }, { status: 400 });
 
-  const conv = await db.conversation.findUnique({
-    where: { id: params.id },
-    select: { id: true, userAId: true, userBId: true, locked: true }
-  });
-  if (!conv) return NextResponse.json({ error: "not found" }, { status: 404 });
-  const side = sideOf(conv, me.id);
+  const side = await ownerSide(params.id, me.id);
   if (!side) return NextResponse.json({ error: "forbidden" }, { status: 403 });
 
-  const msg = await db.message.create({
-    data: { conversationId: conv.id, fromUserId: me.id, body: parsed.data.body }
-  });
+  const now = new Date().toISOString();
+  const msg = {
+    id: cuid(),
+    conversationId: params.id,
+    fromUserId: me.id,
+    body: parsed.data.body,
+    createdAt: now
+  };
+  const { error } = await admin.from("Message").insert(msg);
+  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
 
-  const tick = await recordActivityAndMaybeTick({ conversationId: conv.id, side });
+  // Touch conversation updatedAt + lastActive side
+  const updates: any = { updatedAt: now };
+  if (side === "A") updates.lastActiveA = now;
+  else updates.lastActiveB = now;
+  await admin.from("Conversation").update(updates).eq("id", params.id);
 
-  // Broadcast to the other side via Supabase Realtime (no-op if no key).
-  await supabaseBroadcast(`conv:${conv.id}`, "message", {
-    id: msg.id, body: msg.body, fromUserId: msg.fromUserId, createdAt: msg.createdAt.toISOString()
+  await supabaseBroadcast(`conv:${params.id}`, "message", {
+    id: msg.id, body: msg.body, fromUserId: msg.fromUserId, createdAt: msg.createdAt
   }).catch(() => {});
 
   return NextResponse.json({
-    message: { id: msg.id, body: msg.body, fromUserId: msg.fromUserId, createdAt: msg.createdAt.toISOString() },
-    interactionSeconds: tick.interactionSeconds,
-    locked: tick.locked
+    message: { id: msg.id, body: msg.body, fromUserId: msg.fromUserId, createdAt: msg.createdAt }
   });
 }
