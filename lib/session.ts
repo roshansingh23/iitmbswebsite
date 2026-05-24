@@ -26,7 +26,12 @@ export type Profile = {
   paused: boolean;
   qrCode: string | null;
   isAdmin: boolean;
+  lastSeenAt: string | null;
 };
+
+// Debounce window for the lastSeenAt write — anything within 5 minutes of
+// the previous touch is a no-op, so we don't slam the DB on every render.
+const LAST_SEEN_DEBOUNCE_MS = 5 * 60 * 1000;
 
 export async function getSessionUser(): Promise<Profile | null> {
   try {
@@ -46,7 +51,10 @@ export async function getSessionUser(): Promise<Profile | null> {
       .eq("authId", authUser.id)
       .maybeSingle();
 
-    if (existing) return normalize(existing);
+    if (existing) {
+      await touchLastSeen(admin, existing.id, existing.lastSeenAt);
+      return normalize(existing);
+    }
 
     const meta = (authUser.user_metadata ?? {}) as Record<string, unknown>;
     const name =
@@ -67,6 +75,7 @@ export async function getSessionUser(): Promise<Profile | null> {
         accessTier: "free",
         filterAgeMin: 18,
         filterAgeMax: 99,
+        lastSeenAt: now,
         updatedAt: now
       })
       .select("*")
@@ -86,6 +95,16 @@ export async function getSessionUser(): Promise<Profile | null> {
   } catch (e) {
     console.error("getSessionUser failed:", e);
     return null;
+  }
+}
+
+async function touchLastSeen(admin: any, userId: string, prev: string | null) {
+  try {
+    const prevMs = prev ? new Date(prev).getTime() : 0;
+    if (Date.now() - prevMs < LAST_SEEN_DEBOUNCE_MS) return;
+    await admin.from("User").update({ lastSeenAt: new Date().toISOString() }).eq("id", userId);
+  } catch {
+    // Non-fatal — "active today" is a soft signal.
   }
 }
 
@@ -114,7 +133,8 @@ function normalize(row: any): Profile {
     foundingMember: !!row.foundingMember,
     paused: !!row.paused,
     qrCode: row.qrCode,
-    isAdmin: !!row.isAdmin
+    isAdmin: !!row.isAdmin,
+    lastSeenAt: row.lastSeenAt ?? null
   };
 }
 
