@@ -19,7 +19,9 @@ type Msg = {
   viewsRemaining?: number | null;
 };
 
-const NAV_HEIGHT_PX = 64;
+// Bottom nav is hidden on chat routes, so the input sits flush at the
+// bottom (just the safe-area inset, no nav offset).
+const NAV_HEIGHT_PX = 0;
 
 export function ChatRoom({
   conversationId,

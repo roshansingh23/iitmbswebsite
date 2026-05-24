@@ -14,6 +14,7 @@ import { PauseToggle } from "./pause";
 import { AddPromptButton } from "@/components/add-prompt-button";
 import { ScanQrButton } from "@/components/scan-qr-button";
 import { DownloadAppRow } from "@/components/download-app-row";
+import { NotificationToggle } from "./notifications";
 
 export const dynamic = "force-dynamic";
 
@@ -180,6 +181,16 @@ export default async function MePage() {
         </section>
 
         <section className="mt-10 card-line p-5">
+          <div className="flex items-center justify-between gap-4">
+            <div>
+              <p className="font-semibold">Notifications</p>
+              <p className="text-sm text-muted mt-1">New matches and messages, even when the app is closed.</p>
+            </div>
+            <NotificationToggle />
+          </div>
+        </section>
+
+        <section className="mt-6 card-line p-5">
           <div className="flex items-center justify-between">
             <div>
               <p className="font-semibold">Pause mode</p>

@@ -2,7 +2,8 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Compass, Bookmark, MessageSquareText, Quote, CircleUser } from "lucide-react";
+import { useEffect, useState } from "react";
+import { Compass, Bookmark, MessageSquareText, Quote, CircleUser, Download } from "lucide-react";
 import { ChatListPanel } from "@/components/chat-list-panel";
 import { PushPermissionPrompt } from "@/components/push-permission-prompt";
 
@@ -43,12 +44,38 @@ const DESKTOP_TABS = [
 
 function SideNav() {
   const path = usePathname();
+  // Chat takes over the screen — its own input bar sits at the bottom, so
+  // hide the tab bar there.
+  const hideBottomNav = path.startsWith("/chat/");
+  const [canInstall, setCanInstall] = useState(false);
+
+  useEffect(() => {
+    const installed =
+      window.matchMedia?.("(display-mode: standalone)").matches ||
+      (window.navigator as any).standalone === true;
+    setCanInstall(!installed);
+  }, []);
+
+  async function installApp() {
+    const deferred = typeof window !== "undefined" ? window.__mismatchedInstallPrompt : null;
+    if (deferred) {
+      try {
+        await deferred.prompt();
+        await deferred.userChoice.catch(() => null);
+      } catch {}
+      window.__mismatchedInstallPrompt = null;
+      setCanInstall(false);
+    }
+  }
+
   return (
     <>
       {/* Mobile bottom bar — shown on every touch device (and any non-fine
-          pointer), regardless of viewport width. */}
+          pointer), regardless of viewport width. Hidden inside a chat. */}
       <nav
-        className="desktop:hidden fixed bottom-0 inset-x-0 z-30"
+        className={
+          "fixed bottom-0 inset-x-0 z-30 " + (hideBottomNav ? "hidden" : "desktop:hidden")
+        }
         style={{
           background: "#0a0a0a",
           paddingBottom: "env(safe-area-inset-bottom)"
@@ -125,6 +152,30 @@ function SideNav() {
             </Link>
           );
         })}
+
+        {canInstall && (
+          <button
+            type="button"
+            onClick={installApp}
+            aria-label="Download app"
+            className="group relative w-12 h-12 flex items-center justify-center rounded-xl transition-colors hover:bg-white/5 mt-1 border-t border-white/10 pt-2"
+          >
+            <Download size={22} strokeWidth={1.85} className="text-white/55 group-hover:text-white transition-colors" />
+            <span
+              className="
+                absolute left-full top-1/2 -translate-y-1/2 ml-3
+                px-3 py-1.5 rounded-lg text-sm font-medium whitespace-nowrap text-white
+                opacity-0 -translate-x-2
+                group-hover:opacity-100 group-hover:translate-x-0
+                transition-all duration-200 ease-out
+                pointer-events-none
+              "
+              style={{ background: "#0a0a0a", boxShadow: "0 4px 16px rgba(0,0,0,0.18)" }}
+            >
+              Download app
+            </span>
+          </button>
+        )}
       </nav>
     </>
   );
