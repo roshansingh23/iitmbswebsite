@@ -12,7 +12,7 @@ export function ConfessionComposer() {
   const [error, setError] = useState<string | null>(null);
 
   async function submit() {
-    if (!body.trim()) return;
+    if (!body.trim() || sending) return;
     setSending(true);
     setError(null);
     const res = await fetch("/api/confessions", {
@@ -31,20 +31,21 @@ export function ConfessionComposer() {
   }
 
   return (
-    <div className="mt-8 card-line p-6">
-      <p className="eyebrow">Drop something anonymous</p>
+    <div className="mt-4 card-line p-4">
       <Textarea
-        className="mt-3"
         value={body}
         onChange={(e) => setBody(e.target.value)}
         maxLength={500}
-        placeholder="Say what you'd never say with your name on it. 500 chars."
+        rows={3}
+        placeholder="Share a tea…"
+        className="border-0 p-0 focus:outline-none"
       />
-      <div className="mt-4 flex items-center justify-between">
-        <span className="text-xs text-muted">{body.length} / 500</span>
-        <Button onClick={submit} disabled={sending || !body.trim()}>Post</Button>
+      <div className="mt-2 flex justify-end">
+        <Button onClick={submit} disabled={sending || !body.trim()}>
+          {sending ? "Pouring…" : "Spill"}
+        </Button>
       </div>
-      {error && <p className="mt-3 text-sm text-ink border-l border-ink pl-3">{error}</p>}
+      {error && <p className="mt-2 text-sm text-ink">{error}</p>}
     </div>
   );
 }
