@@ -225,9 +225,9 @@ export function ChatRoom({
   }
 
   return (
-    <div className="lg:flex lg:flex-col lg:h-[calc(100vh-2.5rem)] lg:my-5 lg:bg-white lg:border lg:border-hairline lg:rounded-2xl lg:overflow-hidden lg:shadow-[0_4px_24px_rgba(0,0,0,0.06)]">
+    <div className="lg:fixed lg:top-5 lg:bottom-5 lg:left-[440px] lg:right-5 lg:flex lg:flex-col lg:bg-white lg:border lg:border-hairline lg:rounded-2xl lg:overflow-hidden lg:shadow-[0_4px_24px_rgba(0,0,0,0.06)]">
       <header className="fixed top-0 inset-x-0 z-40 bg-white border-b border-hairline lg:static lg:z-auto lg:flex-shrink-0 lg:border-b-hairline">
-        <div className="mx-auto lg:mx-0 max-w-md h-14 px-3 flex items-center gap-2">
+        <div className="mx-auto lg:mx-0 max-w-md lg:max-w-none h-14 px-3 flex items-center gap-2">
           <Link href="/matches" aria-label="Back" className="p-2 -ml-2 text-ink active:scale-95 transition">
             <ArrowLeft size={22} strokeWidth={2} />
           </Link>
@@ -265,7 +265,7 @@ export function ChatRoom({
           paddingBottom: `calc(${NAV_HEIGHT_PX + 70}px + env(safe-area-inset-bottom))`
         }}
       >
-        <div className="mx-auto max-w-md px-4 py-4 space-y-3">
+        <div className="mx-auto lg:mx-0 max-w-md lg:max-w-none px-4 py-4 space-y-3">
           {msgs.map((m) => {
             const mine = m.fromUserId === meId;
             if ((m.messageType ?? "text") === "photo") {
@@ -284,7 +284,7 @@ export function ChatRoom({
               <div key={m.id} className={mine ? "flex justify-end" : "flex justify-start"}>
                 <div
                   className={
-                    "max-w-[78%] px-4 py-2.5 text-[0.95rem] leading-relaxed " +
+                    "max-w-[78%] lg:max-w-[60ch] px-4 py-2.5 text-[0.95rem] leading-relaxed " +
                     (mine
                       ? "bg-ink text-white rounded-[18px] rounded-br-[6px]"
                       : "bg-tint text-ink rounded-[18px] rounded-bl-[6px]")
@@ -307,7 +307,7 @@ export function ChatRoom({
         className="fixed inset-x-0 z-30 bg-white border-t border-hairline lg:static lg:z-auto lg:flex-shrink-0"
         style={{ bottom: `calc(${NAV_HEIGHT_PX}px + env(safe-area-inset-bottom))` }}
       >
-        <div className="mx-auto lg:mx-0 max-w-md px-4 py-3">
+        <div className="mx-auto lg:mx-0 max-w-md lg:max-w-none px-4 py-3">
           {locked ? (
             <div className="flex items-center justify-between gap-3">
               <p className="text-sm leading-snug">This chat is paused. Upgrade to keep talking.</p>
