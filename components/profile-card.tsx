@@ -5,12 +5,12 @@ import {
   User as UserIcon,
   Heart as HeartIcon,
   Ruler as RulerIcon,
-  MapPin as MapPinIcon,
   Cake as CakeIcon,
   Quote as QuoteIcon,
   Sprout as SproutIcon,
   Users as UsersIcon
 } from "lucide-react";
+import { ProfileMenu } from "./profile-menu";
 
 type Photo = { id: string; url: string; position: number };
 type Prompt = { id: string; text: string };
@@ -58,13 +58,24 @@ function buildBlocks(photos: Photo[], prompts: UserPrompt[]) {
   return blocks;
 }
 
-export function ProfileCard({ candidate }: { candidate: Candidate }) {
+export function ProfileCard({
+  candidate,
+  onRemove
+}: {
+  candidate: Candidate;
+  onRemove: () => void;
+}) {
   const blocks = buildBlocks(candidate.photos, candidate.userPrompts);
 
   return (
     <article>
-      <header className="px-1 mb-3">
+      <header className="px-1 mb-3 flex items-center justify-between">
         <h2 className="font-extrabold text-3xl tracking-[-0.03em]">{candidate.name ?? "—"}</h2>
+        <ProfileMenu
+          candidateId={candidate.id}
+          candidateName={candidate.name ?? "this profile"}
+          onRemove={onRemove}
+        />
       </header>
 
       <div className="space-y-3">
@@ -108,10 +119,9 @@ function InfoCard({ candidate }: { candidate: Candidate }) {
 
   return (
     <div className="card-line p-5">
-      <div className="grid grid-cols-3 gap-3 pb-4 border-b border-hairline">
+      <div className="grid grid-cols-2 gap-3 pb-4 border-b border-hairline">
         <TopCell icon={<CakeIcon size={20} strokeWidth={1.75} />} label={candidate.age != null ? String(candidate.age) : "—"} />
         <TopCell icon={<RulerIcon size={20} strokeWidth={1.75} />} label={candidate.height ?? "—"} />
-        <TopCell icon={<MapPinIcon size={20} strokeWidth={1.75} />} label={candidate.location ?? "—"} />
       </div>
       <ul className="divide-y divide-hairline">
         {rows.map((r, i) => (

@@ -50,7 +50,7 @@ export function DiscoverDeck({ candidates }: { candidates: Candidate[] }) {
   return (
     <>
       <div className="px-4">
-        <ProfileCard candidate={current} />
+        <ProfileCard candidate={current} onRemove={pass} />
       </div>
 
       <div

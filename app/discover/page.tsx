@@ -79,6 +79,16 @@ export default async function DiscoverPage() {
         .contains("showMe", [me.gender])
         .gte("age", me.filterAgeMin ?? 18)
         .lte("age", me.filterAgeMax ?? 99);
+
+      if (me.filterIntentions) q = q.eq("intentions", me.filterIntentions);
+      if (me.filterActiveToday) {
+        const dayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+        q = q.gte("lastSeenAt", dayAgo);
+      }
+      if (me.filterNewHere) {
+        const weekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
+        q = q.gte("createdAt", weekAgo);
+      }
       if (blockIds.size > 0) {
         q = q.not("id", "in", `(${Array.from(blockIds).join(",")})`);
       }
@@ -109,7 +119,13 @@ export default async function DiscoverPage() {
   return (
     <AppShell>
       <div className="pt-2 pb-12">
-        <FilterBar initialAgeMin={me.filterAgeMin} initialAgeMax={me.filterAgeMax} />
+        <FilterBar initial={{
+          filterAgeMin: me.filterAgeMin,
+          filterAgeMax: me.filterAgeMax,
+          filterIntentions: me.filterIntentions,
+          filterActiveToday: me.filterActiveToday,
+          filterNewHere: me.filterNewHere
+        }} />
         {needsCompletion && <CompletionBanner />}
 
         {dbError ? (

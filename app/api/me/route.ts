@@ -5,8 +5,6 @@ import { supabaseAdmin } from "@/lib/supabase-server";
 
 export const runtime = "nodejs";
 
-// PATCH /api/me — partial update of the signed-in user's profile fields.
-// Used by /me settings and the filter sheet on /discover.
 const schema = z.object({
   name: z.string().min(1).max(60).optional(),
   age: z.number().int().min(18).max(99).nullable().optional(),
@@ -16,7 +14,10 @@ const schema = z.object({
   intentions: z.string().max(60).nullable().optional(),
   relationshipType: z.string().max(60).nullable().optional(),
   filterAgeMin: z.number().int().min(18).max(99).optional(),
-  filterAgeMax: z.number().int().min(18).max(99).optional()
+  filterAgeMax: z.number().int().min(18).max(99).optional(),
+  filterIntentions: z.string().max(60).nullable().optional(),
+  filterActiveToday: z.boolean().optional(),
+  filterNewHere: z.boolean().optional()
 });
 
 export async function PATCH(req: Request) {

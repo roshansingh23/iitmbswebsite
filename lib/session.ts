@@ -17,6 +17,9 @@ export type Profile = {
   relationshipType: string | null;
   filterAgeMin: number;
   filterAgeMax: number;
+  filterIntentions: string | null;
+  filterActiveToday: boolean;
+  filterNewHere: boolean;
   accessTier: string;
   verified: boolean;
   foundingMember: boolean;
@@ -103,6 +106,9 @@ function normalize(row: any): Profile {
     relationshipType: row.relationshipType ?? null,
     filterAgeMin: row.filterAgeMin ?? 18,
     filterAgeMax: row.filterAgeMax ?? 99,
+    filterIntentions: row.filterIntentions ?? null,
+    filterActiveToday: !!row.filterActiveToday,
+    filterNewHere: !!row.filterNewHere,
     accessTier: row.accessTier ?? "free",
     verified: !!row.verified,
     foundingMember: !!row.foundingMember,
