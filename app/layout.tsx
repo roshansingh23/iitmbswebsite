@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Inter, Newsreader } from "next/font/google";
 import "./globals.css";
+import { SplashScreen } from "@/components/splash-screen";
 
 const inter = Inter({
   subsets: ["latin"],
@@ -60,7 +61,10 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           }}
         />
       </head>
-      <body className="min-h-screen bg-bone text-ink antialiased">{children}</body>
+      <body className="min-h-screen bg-bone text-ink antialiased">
+        <SplashScreen />
+        {children}
+      </body>
     </html>
   );
 }

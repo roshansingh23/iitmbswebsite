@@ -12,8 +12,11 @@ export default function manifest(): MetadataRoute.Manifest {
     scope: "/",
     display: "standalone",
     orientation: "portrait",
-    background_color: "#FFFFFF",
-    theme_color: "#1C1B19",
+    // Black background so the OS-native splash (icon + name on the
+    // background_color) blends seamlessly into the in-app splash
+    // overlay rendered by components/splash-screen.tsx.
+    background_color: "#0a0a0a",
+    theme_color: "#0a0a0a",
     icons: [
       {
         src: "/icon-192",
