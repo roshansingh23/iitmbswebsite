@@ -2,7 +2,7 @@ import { notFound, redirect } from "next/navigation";
 import { getSessionUser } from "@/lib/session";
 import { supabaseAdmin } from "@/lib/supabase-server";
 import { AppShell } from "@/components/app-shell";
-import { ProfileCard } from "@/components/profile-card";
+import { ProfileViewClient, type DetailCandidate } from "@/components/profile-view-client";
 
 export const dynamic = "force-dynamic";
 
@@ -20,7 +20,8 @@ export default async function ProfileDetailPage({ params }: { params: { id: stri
   const { data: u } = await admin
     .from("User")
     .select(
-      "id,name,age,gender,orientation,bio,height,location,intentions,\"relationshipType\",verified,foundingMember,paused," +
+      "id,name,age,gender,orientation,bio,height,location,intentions," +
+      "\"relationshipType\",verified,foundingMember,paused," +
       "photos:Photo(id,url,position)," +
       "userPrompts:UserPrompt(id,answer,position,prompt:Prompt(id,text))"
     )
@@ -29,18 +30,28 @@ export default async function ProfileDetailPage({ params }: { params: { id: stri
 
   if (!u || (u as any).paused) notFound();
 
-  const candidate = {
-    ...(u as any),
-    photos: [...((u as any).photos ?? [])].sort((a: any, b: any) => a.position - b.position),
-    userPrompts: [...((u as any).userPrompts ?? [])].sort(
-      (a: any, b: any) => a.position - b.position
-    )
+  const raw = u as any;
+  const candidate: DetailCandidate = {
+    id: raw.id,
+    name: raw.name,
+    age: raw.age,
+    gender: raw.gender,
+    orientation: raw.orientation,
+    bio: raw.bio,
+    height: raw.height,
+    location: raw.location,
+    intentions: raw.intentions,
+    relationshipType: raw.relationshipType,
+    verified: !!raw.verified,
+    foundingMember: !!raw.foundingMember,
+    photos: [...(raw.photos ?? [])].sort((a: any, b: any) => a.position - b.position),
+    userPrompts: [...(raw.userPrompts ?? [])].sort((a: any, b: any) => a.position - b.position)
   };
 
   return (
     <AppShell>
       <div className="px-4 pt-4 pb-12">
-        <ProfileCard candidate={candidate} onRemove={() => {}} />
+        <ProfileViewClient candidate={candidate} />
       </div>
     </AppShell>
   );

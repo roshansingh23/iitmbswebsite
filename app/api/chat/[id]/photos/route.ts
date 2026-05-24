@@ -6,7 +6,14 @@ import { checkRateLimit } from "@/lib/rate-limit";
 
 export const runtime = "nodejs";
 
-const schema = z.object({ body: z.string().min(1).max(1000) });
+// Sender posts an already-uploaded Cloudinary asset. We mint a Message row
+// with messageType='photo' and a 3-view counter. The recipient consumes
+// views through /api/chat/[id]/messages/[msgId]/view; once viewsRemaining
+// hits zero the URL is nulled out on the server.
+const schema = z.object({
+  url: z.string().url(),
+  publicId: z.string().min(1)
+});
 
 function cuid() {
   return "c" + Math.random().toString(36).slice(2, 14) + Math.random().toString(36).slice(2, 14);
@@ -26,43 +33,6 @@ async function ownerSide(conversationId: string, userId: string) {
   return null;
 }
 
-export async function GET(req: Request, { params }: { params: { id: string } }) {
-  const me = await requireUser().catch(() => null);
-  if (!me) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
-  const admin = supabaseAdmin();
-  if (!admin) return NextResponse.json({ error: "server misconfigured" }, { status: 503 });
-
-  if (!(await ownerSide(params.id, me.id))) {
-    return NextResponse.json({ error: "forbidden" }, { status: 403 });
-  }
-
-  const after = new URL(req.url).searchParams.get("after") ?? undefined;
-  let q = admin.from("Message")
-    .select("id,body,fromUserId,createdAt,messageType,photoUrl,viewsRemaining")
-    .eq("conversationId", params.id)
-    .order("createdAt", { ascending: true })
-    .limit(100);
-
-  if (after) {
-    const { data: anchor } = await admin.from("Message").select("createdAt").eq("id", after).maybeSingle();
-    if (anchor) q = q.gt("createdAt", (anchor as any).createdAt);
-  }
-  const { data: messages } = await q;
-  return NextResponse.json({
-    messages: (messages ?? []).map((m: any) => ({
-      id: m.id,
-      body: m.body,
-      fromUserId: m.fromUserId,
-      messageType: m.messageType ?? "text",
-      // Don't leak the photo URL to recipients here — they must consume a
-      // view via /view to get the URL. Senders see their own URLs.
-      photoUrl: m.fromUserId === me.id ? (m.photoUrl ?? null) : null,
-      viewsRemaining: m.viewsRemaining ?? null,
-      createdAt: typeof m.createdAt === "string" ? m.createdAt : new Date(m.createdAt).toISOString()
-    }))
-  });
-}
-
 export async function POST(req: Request, { params }: { params: { id: string } }) {
   const me = await requireUser().catch(() => null);
   if (!me) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
@@ -75,6 +45,7 @@ export async function POST(req: Request, { params }: { params: { id: string } })
   const side = await ownerSide(params.id, me.id);
   if (!side) return NextResponse.json({ error: "forbidden" }, { status: 403 });
 
+  // Photo messages count against the same per-user message budget.
   const rl = await checkRateLimit("message", me.id);
   if (!rl.ok) return NextResponse.json({ error: rl.reason }, { status: 429 });
 
@@ -83,23 +54,42 @@ export async function POST(req: Request, { params }: { params: { id: string } })
     id: cuid(),
     conversationId: params.id,
     fromUserId: me.id,
-    body: parsed.data.body,
+    body: null,
+    messageType: "photo",
+    photoUrl: parsed.data.url,
+    photoPublicId: parsed.data.publicId,
+    viewsRemaining: 3,
     createdAt: now
   };
   const { error } = await admin.from("Message").insert(msg);
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
 
-  // Touch conversation updatedAt + lastActive side
   const updates: any = { updatedAt: now };
   if (side === "A") updates.lastActiveA = now;
   else updates.lastActiveB = now;
   await admin.from("Conversation").update(updates).eq("id", params.id);
 
+  // Broadcast without the photo URL — recipients only get the URL by
+  // consuming a view through /view (which decrements the counter).
   await supabaseBroadcast(`conv:${params.id}`, "message", {
-    id: msg.id, body: msg.body, fromUserId: msg.fromUserId, createdAt: msg.createdAt
+    id: msg.id,
+    body: null,
+    messageType: "photo",
+    photoUrl: null,
+    viewsRemaining: 3,
+    fromUserId: msg.fromUserId,
+    createdAt: msg.createdAt
   }).catch(() => {});
 
   return NextResponse.json({
-    message: { id: msg.id, body: msg.body, fromUserId: msg.fromUserId, createdAt: msg.createdAt }
+    message: {
+      id: msg.id,
+      body: null,
+      messageType: "photo",
+      photoUrl: msg.photoUrl,
+      viewsRemaining: 3,
+      fromUserId: msg.fromUserId,
+      createdAt: msg.createdAt
+    }
   });
 }

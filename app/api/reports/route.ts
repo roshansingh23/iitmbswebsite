@@ -33,10 +33,29 @@ export async function POST(req: Request) {
     status: "open",
     createdAt: new Date().toISOString()
   };
-  if (targetType === "user") row.targetUserId = targetId;
-  if (targetType === "message") row.targetMessageId = targetId;
-  if (targetType === "confession") row.targetConfessionId = targetId;
-  if (targetType === "confession_reply") row.targetReplyId = targetId;
+  if (targetType === "user") {
+    row.targetUserId = targetId;
+  } else if (targetType === "message") {
+    row.targetMessageId = targetId;
+    const { data: msg } = await admin
+      .from("Message")
+      .select("fromUserId")
+      .eq("id", targetId)
+      .maybeSingle();
+    if (msg) row.targetUserId = (msg as any).fromUserId;
+  } else if (targetType === "photo") {
+    // targetId is a Photo.id — record the photo's owner so admins can act.
+    const { data: ph } = await admin
+      .from("Photo")
+      .select("userId")
+      .eq("id", targetId)
+      .maybeSingle();
+    if (ph) row.targetUserId = (ph as any).userId;
+  } else if (targetType === "confession") {
+    row.targetConfessionId = targetId;
+  } else if (targetType === "confession_reply") {
+    row.targetReplyId = targetId;
+  }
 
   const { error } = await admin.from("Report").insert(row);
   if (error) {

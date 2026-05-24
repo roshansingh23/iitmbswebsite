@@ -1,13 +1,32 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { X as XIcon, Heart as HeartIcon } from "lucide-react";
 import { ProfileCard, type Candidate } from "./profile-card";
+import { recordImpression, flushImpressions } from "@/lib/impressions";
 
 export function DiscoverDeck({ candidates }: { candidates: Candidate[] }) {
   const [idx, setIdx] = useState(0);
 
   const current = candidates[idx];
+
+  // Record each profile shown so the 24h impression filter keeps the deck
+  // fresh on the next visit.
+  useEffect(() => {
+    if (current?.id) recordImpression(current.id);
+  }, [current?.id]);
+
+  // Flush queued impressions on unmount or tab close.
+  useEffect(() => {
+    function onHide() { if (document.visibilityState === "hidden") flushImpressions(); }
+    window.addEventListener("pagehide", flushImpressions);
+    document.addEventListener("visibilitychange", onHide);
+    return () => {
+      flushImpressions();
+      window.removeEventListener("pagehide", flushImpressions);
+      document.removeEventListener("visibilitychange", onHide);
+    };
+  }, []);
 
   // Fire-and-forget. Deck advances on tap, server uses onConflict-do-nothing
   // so duplicate submits are harmless. No await => button feels instant.

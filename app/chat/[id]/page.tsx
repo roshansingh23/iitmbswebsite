@@ -51,7 +51,7 @@ export default async function ChatPage({ params }: { params: { id: string } }) {
 
   const { data: messages } = await admin
     .from("Message")
-    .select("id,body,fromUserId,createdAt")
+    .select("id,body,fromUserId,createdAt,messageType,photoUrl,viewsRemaining")
     .eq("conversationId", params.id)
     .order("createdAt", { ascending: true })
     .limit(200);
@@ -70,6 +70,10 @@ export default async function ChatPage({ params }: { params: { id: string } }) {
           id: m.id,
           body: m.body,
           fromUserId: m.fromUserId,
+          messageType: m.messageType ?? "text",
+          // Hide the URL from recipients — they have to spend a view to see it.
+          photoUrl: m.fromUserId === me.id ? (m.photoUrl ?? null) : null,
+          viewsRemaining: m.viewsRemaining ?? null,
           createdAt: typeof m.createdAt === "string" ? m.createdAt : new Date(m.createdAt).toISOString()
         }))}
         initialLocked={(conv as any).locked}

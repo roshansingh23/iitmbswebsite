@@ -44,16 +44,31 @@ export default async function DiscoverPage() {
       ]);
       needsCompletion = (photoCount ?? 0) < 2 || (promptCount ?? 0) < 3;
 
-      const [{ data: blocks }, { data: myHooks }, { data: myPasses }] = await Promise.all([
+      const IMPRESSION_WINDOW_MS = 24 * 60 * 60 * 1000;
+      const recentImpressionCutoff = new Date(Date.now() - IMPRESSION_WINDOW_MS).toISOString();
+
+      const [
+        { data: blocks },
+        { data: myHooks },
+        { data: myPasses },
+        { data: myImpressions }
+      ] = await Promise.all([
         admin.from("Block").select("fromUserId,toUserId")
           .or(`fromUserId.eq.${me.id},toUserId.eq.${me.id}`),
         admin.from("Hook").select("toUserId").eq("fromUserId", me.id),
-        admin.from("Pass").select("toUserId,createdAt").eq("fromUserId", me.id)
+        admin.from("Pass").select("toUserId,createdAt").eq("fromUserId", me.id),
+        admin.from("Impression")
+          .select("candidateId")
+          .eq("viewerId", me.id)
+          .gte("lastShownAt", recentImpressionCutoff)
       ]);
 
       const excludeIds = new Set<string>();
       (blocks ?? []).forEach((b: any) => { excludeIds.add(b.fromUserId); excludeIds.add(b.toUserId); });
       (myHooks ?? []).forEach((h: any) => excludeIds.add(h.toUserId));
+      // 24h impression window: profiles shown to me in the last day stay out
+      // of the deck so reloads keep feeling fresh.
+      (myImpressions ?? []).forEach((i: any) => excludeIds.add(i.candidateId));
       excludeIds.delete(me.id);
 
       // Recent passes (last 7d) are also excluded from the SQL pool. Older
