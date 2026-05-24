@@ -17,6 +17,37 @@ function cuid() {
   return "c" + Math.random().toString(36).slice(2, 14) + Math.random().toString(36).slice(2, 14);
 }
 
+// Unhook — undo a previously sent match request. Body: { toUserId }.
+// Also tears down a non-matched Conversation (one-way) if it exists.
+const deleteSchema = z.object({ toUserId: z.string().min(1) });
+
+export async function DELETE(req: Request) {
+  const me = await requireUser().catch(() => null);
+  if (!me) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
+  const admin = supabaseAdmin();
+  if (!admin) return NextResponse.json({ error: "server misconfigured" }, { status: 503 });
+
+  const parsed = deleteSchema.safeParse(await req.json());
+  if (!parsed.success) return NextResponse.json({ error: "Invalid" }, { status: 400 });
+  const { toUserId } = parsed.data;
+
+  await admin.from("Hook").delete().eq("fromUserId", me.id).eq("toUserId", toUserId);
+
+  // If the other side never hooked us, the Conversation is one-way — drop it.
+  const { data: reverse } = await admin
+    .from("Hook")
+    .select("id")
+    .eq("fromUserId", toUserId)
+    .eq("toUserId", me.id)
+    .maybeSingle();
+  if (!reverse) {
+    const [a, b] = [me.id, toUserId].sort();
+    await admin.from("Conversation").delete().eq("userAId", a).eq("userBId", b);
+  }
+
+  return NextResponse.json({ ok: true });
+}
+
 export async function POST(req: Request) {
   const me = await requireUser().catch(() => null);
   if (!me) return NextResponse.json({ error: "unauthorized" }, { status: 401 });

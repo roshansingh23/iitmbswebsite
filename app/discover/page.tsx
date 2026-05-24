@@ -54,17 +54,26 @@ export default async function DiscoverPage() {
       ]);
       needsCompletion = (photoCount ?? 0) < 2 || (promptCount ?? 0) < 3;
 
-      // Blocks (both directions)
-      const { data: blocks } = await admin
-        .from("Block")
-        .select("fromUserId,toUserId")
-        .or(`fromUserId.eq.${me.id},toUserId.eq.${me.id}`);
-      const blockIds = new Set<string>();
+      // Blocks (both directions) and anyone I've already hooked/matched.
+      // The user explicitly doesn't want already-hooked profiles to keep
+      // resurfacing in Discover.
+      const [{ data: blocks }, { data: myHooks }] = await Promise.all([
+        admin
+          .from("Block")
+          .select("fromUserId,toUserId")
+          .or(`fromUserId.eq.${me.id},toUserId.eq.${me.id}`),
+        admin
+          .from("Hook")
+          .select("toUserId")
+          .eq("fromUserId", me.id)
+      ]);
+      const excludeIds = new Set<string>();
       (blocks ?? []).forEach((b: any) => {
-        blockIds.add(b.fromUserId);
-        blockIds.add(b.toUserId);
+        excludeIds.add(b.fromUserId);
+        excludeIds.add(b.toUserId);
       });
-      blockIds.delete(me.id);
+      (myHooks ?? []).forEach((h: any) => excludeIds.add(h.toUserId));
+      excludeIds.delete(me.id);
 
       let q = admin
         .from("User")
@@ -89,8 +98,8 @@ export default async function DiscoverPage() {
         const weekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
         q = q.gte("createdAt", weekAgo);
       }
-      if (blockIds.size > 0) {
-        q = q.not("id", "in", `(${Array.from(blockIds).join(",")})`);
+      if (excludeIds.size > 0) {
+        q = q.not("id", "in", `(${Array.from(excludeIds).join(",")})`);
       }
 
       const { data, error } = await q.limit(40);
