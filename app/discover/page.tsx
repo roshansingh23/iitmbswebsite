@@ -1,10 +1,11 @@
 import { redirect } from "next/navigation";
-import Image from "next/image";
 import { getSessionUser } from "@/lib/session";
 import { supabaseAdmin } from "@/lib/supabase-server";
 import { gendersIWant } from "@/lib/matching";
 import { AppShell } from "@/components/app-shell";
 import { ProfileCard } from "@/components/profile-card";
+import { FilterBar } from "@/components/filter-bar";
+import { CompletionBanner } from "@/components/completion-banner";
 
 export const dynamic = "force-dynamic";
 
@@ -34,12 +35,22 @@ export default async function DiscoverPage() {
 
   let candidates: Candidate[] = [];
   let dbError = false;
+  let needsCompletion = false;
   const admin = supabaseAdmin();
 
   if (!admin) {
     dbError = true;
   } else {
     try {
+      // Profile-completion check — show the pink nudge if photos < 2 or
+      // prompts < 3.
+      const [{ count: photoCount }, { count: promptCount }] = await Promise.all([
+        admin.from("Photo").select("id", { count: "exact", head: true }).eq("userId", me.id),
+        admin.from("UserPrompt").select("id", { count: "exact", head: true }).eq("userId", me.id)
+      ]);
+      needsCompletion = (photoCount ?? 0) < 2 || (promptCount ?? 0) < 3;
+
+      // Blocks (both directions)
       const { data: blocks } = await admin
         .from("Block")
         .select("fromUserId,toUserId")
@@ -62,7 +73,6 @@ export default async function DiscoverPage() {
         .eq("paused", false)
         .in("gender", wantGenders as any)
         .contains("showMe", [me.gender]);
-
       if (blockIds.size > 0) {
         q = q.not("id", "in", `(${Array.from(blockIds).join(",")})`);
       }
@@ -92,26 +102,31 @@ export default async function DiscoverPage() {
 
   return (
     <AppShell>
-      <div className="px-4 pt-4 pb-12">
-        {dbError ? (
-          <div className="card-line p-6">
-            <p className="font-semibold text-lg">Couldn't load profiles.</p>
-            <p className="mt-2 text-muted text-sm">Try refreshing in a moment.</p>
-          </div>
-        ) : candidates.length === 0 ? (
-          <div className="card-line p-6">
-            <p className="font-semibold text-lg">No fresh faces today.</p>
-            <p className="mt-2 text-muted text-sm">Come back tomorrow — we shuffle the deck daily.</p>
-          </div>
-        ) : (
-          <ul className="space-y-12">
-            {candidates.map((c) => (
-              <li key={c.id}>
-                <ProfileCard candidate={c} />
-              </li>
-            ))}
-          </ul>
-        )}
+      <div className="pt-2 pb-12">
+        <FilterBar />
+        {needsCompletion && <CompletionBanner />}
+
+        <div className="px-4">
+          {dbError ? (
+            <div className="card-line p-6">
+              <p className="font-semibold text-lg">Couldn't load profiles.</p>
+              <p className="mt-2 text-muted text-sm">Try refreshing in a moment.</p>
+            </div>
+          ) : candidates.length === 0 ? (
+            <div className="card-line p-6">
+              <p className="font-semibold text-lg">No fresh faces today.</p>
+              <p className="mt-2 text-muted text-sm">Come back tomorrow — we shuffle the deck daily.</p>
+            </div>
+          ) : (
+            <ul className="space-y-12">
+              {candidates.map((c) => (
+                <li key={c.id}>
+                  <ProfileCard candidate={c} />
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
       </div>
     </AppShell>
   );
