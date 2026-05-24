@@ -92,12 +92,7 @@ export default async function DiscoverPage() {
 
   return (
     <AppShell>
-      <div className="px-4 pt-6 pb-12">
-        <header className="flex items-baseline justify-between mb-6">
-          <h1 className="font-extrabold text-2xl tracking-[-0.04em]">Discover</h1>
-          <span className="text-xs text-muted">{candidates.length} {candidates.length === 1 ? "person" : "people"}</span>
-        </header>
-
+      <div className="px-4 pt-4 pb-12">
         {dbError ? (
           <div className="card-line p-6">
             <p className="font-semibold text-lg">Couldn't load profiles.</p>
