@@ -55,6 +55,7 @@ export async function getSessionUser(): Promise<Profile | null> {
       null;
 
     const id = "c" + Math.random().toString(36).slice(2, 14) + Math.random().toString(36).slice(2, 14);
+    const now = new Date().toISOString();
     const { data: created, error } = await admin
       .from("User")
       .insert({
@@ -64,17 +65,21 @@ export async function getSessionUser(): Promise<Profile | null> {
         name,
         qrCode: randomQrCode(),
         showMe: [],
-        accessTier: "free"
+        accessTier: "free",
+        // Prisma usually fills this — Supabase JS doesn't, and the DB column
+        // is NOT NULL with no default, so omitting it fails the insert.
+        updatedAt: now
       })
       .select("*")
       .single();
 
     if (error) {
-      // Race or unique-constraint — re-fetch.
+      console.error("First-touch User insert failed:", error.message, error.details ?? "");
+      // Race or unique-constraint — re-fetch by authId or email.
       const { data: refetched } = await admin
         .from("User")
         .select("*")
-        .eq("authId", authUser.id)
+        .or(`authId.eq.${authUser.id},email.eq.${authUser.email}`)
         .maybeSingle();
       return refetched ? normalize(refetched) : null;
     }
