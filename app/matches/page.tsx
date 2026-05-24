@@ -5,6 +5,7 @@ import { BadgeCheck } from "lucide-react";
 import { getSessionUser } from "@/lib/session";
 import { supabaseAdmin } from "@/lib/supabase-server";
 import { AppShell } from "@/components/app-shell";
+import { thumb } from "@/lib/cloudinary-thumb";
 
 export const dynamic = "force-dynamic";
 
@@ -98,7 +99,7 @@ export default async function MatchesPage() {
                   >
                     <div className="relative w-14 h-14 rounded-full overflow-hidden bg-tint shrink-0">
                       {photo && (
-                        <Image src={photo} alt="" fill className="object-cover" sizes="56px" />
+                        <Image src={thumb(photo, 150)} alt="" fill className="object-cover" sizes="56px" />
                       )}
                     </div>
                     <div className="flex-1 min-w-0">

@@ -62,7 +62,7 @@ export default async function MePage() {
         <section className="mt-10">
           <header className="flex items-baseline justify-between mb-4">
             <h2 className="font-semibold text-lg">Photos</h2>
-            <span className="text-xs text-muted">{photos.length} / 9</span>
+            <span className="text-xs text-muted">{photos.length} / 5</span>
           </header>
           <PhotoManager initialPhotos={photos} />
         </section>

@@ -3,6 +3,7 @@
 import { useState } from "react";
 import Image from "next/image";
 import { supabaseBrowser } from "@/lib/supabase-browser";
+import { thumb } from "@/lib/cloudinary-thumb";
 
 type Photo = { url: string; publicId: string };
 
@@ -17,6 +18,10 @@ export function PhotoUploader({
   const [err, setErr] = useState<string | null>(null);
 
   async function upload(file: File) {
+    if (value.length >= 5) {
+      setErr("Max 5 photos.");
+      return;
+    }
     setBusy(true);
     setErr(null);
     try {
@@ -67,7 +72,7 @@ export function PhotoUploader({
       <div className="grid grid-cols-3 gap-3">
         {value.map((p, i) => (
           <div key={p.publicId} className="relative aspect-[4/5] card-line overflow-hidden">
-            <Image src={p.url} alt="" fill className="object-cover" sizes="200px" />
+            <Image src={thumb(p.url, 300)} alt="" fill className="object-cover" sizes="200px" />
             <button
               type="button"
               onClick={() => removeAt(i)}
@@ -78,20 +83,22 @@ export function PhotoUploader({
           </div>
         ))}
 
-        <label className="aspect-[4/5] card-line border-dashed flex items-center justify-center text-sm text-muted cursor-pointer hover:bg-tint transition">
-          <input
-            type="file"
-            accept="image/*"
-            className="hidden"
-            onChange={(e) => {
-              const f = e.target.files?.[0];
-              if (f) upload(f);
-              e.currentTarget.value = "";
-            }}
-            disabled={busy}
-          />
-          {busy ? "Uploading…" : "+ Add"}
-        </label>
+        {value.length < 5 && (
+          <label className="aspect-[4/5] card-line border-dashed flex items-center justify-center text-sm text-muted cursor-pointer hover:bg-tint transition">
+            <input
+              type="file"
+              accept="image/*"
+              className="hidden"
+              onChange={(e) => {
+                const f = e.target.files?.[0];
+                if (f) upload(f);
+                e.currentTarget.value = "";
+              }}
+              disabled={busy}
+            />
+            {busy ? "Uploading…" : "+ Add"}
+          </label>
+        )}
       </div>
       {err && <p className="mt-3 text-xs text-ink border-l border-ink pl-2">{err}</p>}
     </div>

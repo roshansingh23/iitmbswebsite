@@ -1,5 +1,6 @@
 import Image from "next/image";
 import { Button } from "@/components/ui/button";
+import { thumb } from "@/lib/cloudinary-thumb";
 
 export function PhotoCard({
   url,
@@ -16,7 +17,7 @@ export function PhotoCard({
     <figure className="card-line overflow-hidden">
       <div className="relative aspect-[4/5] bg-tint">
         <Image
-          src={url}
+          src={thumb(url, 600)}
           alt={alt}
           fill
           sizes="(min-width:1024px) 480px, 90vw"

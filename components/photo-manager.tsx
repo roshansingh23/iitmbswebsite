@@ -3,6 +3,7 @@
 import Image from "next/image";
 import { useState } from "react";
 import { supabaseBrowser } from "@/lib/supabase-browser";
+import { thumb } from "@/lib/cloudinary-thumb";
 
 export type Photo = {
   id: string;
@@ -20,6 +21,10 @@ export function PhotoManager({ initialPhotos }: { initialPhotos: Photo[] }) {
   const [err, setErr] = useState<string | null>(null);
 
   async function add(file: File) {
+    if (photos.length >= 5) {
+      setErr("Max 5 photos. Remove one first.");
+      return;
+    }
     setBusy(true);
     setErr(null);
     try {
@@ -78,7 +83,7 @@ export function PhotoManager({ initialPhotos }: { initialPhotos: Photo[] }) {
             className="relative aspect-[4/5] rounded-2xl overflow-hidden border border-hairline bg-tint"
             style={{ boxShadow: "0 1px 3px rgba(0,0,0,0.06)" }}
           >
-            <Image src={p.url} alt="" fill className="object-cover" sizes="(min-width:768px) 300px, 50vw" />
+            <Image src={thumb(p.url, 400)} alt="" fill className="object-cover" sizes="(min-width:768px) 300px, 50vw" />
             <button
               type="button"
               onClick={() => remove(p.id)}
@@ -91,22 +96,24 @@ export function PhotoManager({ initialPhotos }: { initialPhotos: Photo[] }) {
           </figure>
         ))}
 
-        <label
-          className="aspect-[4/5] rounded-2xl border border-dashed border-hairline flex items-center justify-center text-sm font-medium text-muted cursor-pointer hover:bg-tint transition"
-        >
-          <input
-            type="file"
-            accept="image/*"
-            className="hidden"
-            onChange={(e) => {
-              const f = e.target.files?.[0];
-              if (f) add(f);
-              e.currentTarget.value = "";
-            }}
-            disabled={busy}
-          />
-          {busy ? "Uploading…" : "+ Add photo"}
-        </label>
+        {photos.length < 5 && (
+          <label
+            className="aspect-[4/5] rounded-2xl border border-dashed border-hairline flex items-center justify-center text-sm font-medium text-muted cursor-pointer hover:bg-tint transition"
+          >
+            <input
+              type="file"
+              accept="image/*"
+              className="hidden"
+              onChange={(e) => {
+                const f = e.target.files?.[0];
+                if (f) add(f);
+                e.currentTarget.value = "";
+              }}
+              disabled={busy}
+            />
+            {busy ? "Uploading…" : "+ Add photo"}
+          </label>
+        )}
       </div>
       {err && <p className="mt-3 text-xs text-ink border-l border-ink pl-2">{err}</p>}
     </div>

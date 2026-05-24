@@ -1,6 +1,7 @@
 "use client";
 
 import Image from "next/image";
+import { thumb } from "@/lib/cloudinary-thumb";
 import {
   User as UserIcon,
   Heart as HeartIcon,
@@ -105,7 +106,7 @@ function PhotoBlock({ photo, alt }: { photo: Photo; alt: string }) {
   return (
     <figure className="rounded-2xl overflow-hidden border border-hairline bg-tint">
       <div className="relative aspect-[4/5]">
-        <Image src={photo.url} alt={alt} fill sizes="500px" className="object-cover" />
+        <Image src={thumb(photo.url, 600)} alt={alt} fill sizes="500px" className="object-cover" />
       </div>
     </figure>
   );

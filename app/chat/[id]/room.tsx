@@ -7,6 +7,7 @@ import { ArrowLeft, BadgeCheck } from "lucide-react";
 import { supabaseBrowser } from "@/lib/supabase-browser";
 import { ChatMenu } from "@/components/chat-menu";
 import { Button } from "@/components/ui/button";
+import { thumb } from "@/lib/cloudinary-thumb";
 
 type Msg = { id: string; body: string; fromUserId: string; createdAt: string };
 
@@ -49,7 +50,9 @@ export function ChatRoom({
       fetch(`/api/chat/${conversationId}/heartbeat`, { method: "POST" }).catch(() => {});
     }
     ping();
-    const t = setInterval(ping, 30_000);
+    // 5-minute heartbeat — the 30s cadence was burning Supabase writes at
+    // scale. lastSeenAt is a soft signal so this resolution is plenty.
+    const t = setInterval(ping, 5 * 60_000);
     return () => clearInterval(t);
   }, [conversationId]);
 
@@ -125,7 +128,7 @@ export function ChatRoom({
           >
             <div className="relative w-9 h-9 rounded-full overflow-hidden bg-tint shrink-0">
               {otherPhoto && (
-                <Image src={otherPhoto} alt="" fill className="object-cover" sizes="36px" />
+                <Image src={thumb(otherPhoto, 100)} alt="" fill className="object-cover" sizes="36px" />
               )}
               {otherActive && (
                 <span

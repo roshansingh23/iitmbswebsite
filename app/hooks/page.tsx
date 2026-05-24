@@ -5,6 +5,7 @@ import { MessageSquareText } from "lucide-react";
 import { getSessionUser } from "@/lib/session";
 import { supabaseAdmin } from "@/lib/supabase-server";
 import { AppShell } from "@/components/app-shell";
+import { thumb } from "@/lib/cloudinary-thumb";
 
 export const dynamic = "force-dynamic";
 
@@ -143,7 +144,7 @@ function Row({ row, matched }: { row: Row; matched: boolean }) {
     <div className="card-line flex items-center gap-3 p-3">
       <div className="relative w-14 h-14 rounded-full overflow-hidden bg-tint shrink-0">
         {row.otherPhoto && (
-          <Image src={row.otherPhoto} alt="" fill className="object-cover" sizes="56px" />
+          <Image src={thumb(row.otherPhoto, 150)} alt="" fill className="object-cover" sizes="56px" />
         )}
       </div>
       <div className="flex-1 min-w-0">

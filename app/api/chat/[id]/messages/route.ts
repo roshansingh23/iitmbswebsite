@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { requireUser } from "@/lib/session";
 import { supabaseAdmin, supabaseBroadcast } from "@/lib/supabase-server";
+import { checkRateLimit } from "@/lib/rate-limit";
 
 export const runtime = "nodejs";
 
@@ -66,6 +67,9 @@ export async function POST(req: Request, { params }: { params: { id: string } })
 
   const side = await ownerSide(params.id, me.id);
   if (!side) return NextResponse.json({ error: "forbidden" }, { status: 403 });
+
+  const rl = await checkRateLimit("message", me.id);
+  if (!rl.ok) return NextResponse.json({ error: rl.reason }, { status: 429 });
 
   const now = new Date().toISOString();
   const msg = {

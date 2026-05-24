@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import { getSessionUser } from "@/lib/session";
 import { supabaseAdmin } from "@/lib/supabase-server";
 import { gendersIWant } from "@/lib/matching";
+import { rankCandidates, type Me, type CandidateInput } from "@/lib/recommender";
 import { AppShell } from "@/components/app-shell";
 import { DiscoverDeck } from "@/components/discover-deck";
 import { FilterBar } from "@/components/filter-bar";
@@ -9,23 +10,14 @@ import { CompletionBanner } from "@/components/completion-banner";
 
 export const dynamic = "force-dynamic";
 
-type Candidate = {
-  id: string;
+type Candidate = CandidateInput & {
   name: string | null;
-  age: number | null;
   gender: string | null;
   orientation: string | null;
   bio: string | null;
   height: string | null;
-  location: string | null;
-  intentions: string | null;
-  relationshipType: string | null;
-  verified: boolean;
-  foundingMember: boolean;
   paused: boolean;
   showMe: string[];
-  lastSeenAt: string | null;
-  createdAt: string | null;
   photos: { id: string; url: string; position: number }[];
   userPrompts: { id: string; answer: string; position: number; prompt: { id: string; text: string } }[];
 };
@@ -46,48 +38,46 @@ export default async function DiscoverPage() {
     dbError = true;
   } else {
     try {
-      // Profile-completion check — show the pink nudge if photos < 2 or
-      // prompts < 3.
       const [{ count: photoCount }, { count: promptCount }] = await Promise.all([
         admin.from("Photo").select("id", { count: "exact", head: true }).eq("userId", me.id),
         admin.from("UserPrompt").select("id", { count: "exact", head: true }).eq("userId", me.id)
       ]);
       needsCompletion = (photoCount ?? 0) < 2 || (promptCount ?? 0) < 3;
 
-      // Blocks (both directions) and anyone I've already hooked/matched.
-      // The user explicitly doesn't want already-hooked profiles to keep
-      // resurfacing in Discover.
-      const [{ data: blocks }, { data: myHooks }] = await Promise.all([
-        admin
-          .from("Block")
-          .select("fromUserId,toUserId")
+      const [{ data: blocks }, { data: myHooks }, { data: myPasses }] = await Promise.all([
+        admin.from("Block").select("fromUserId,toUserId")
           .or(`fromUserId.eq.${me.id},toUserId.eq.${me.id}`),
-        admin
-          .from("Hook")
-          .select("toUserId")
-          .eq("fromUserId", me.id)
+        admin.from("Hook").select("toUserId").eq("fromUserId", me.id),
+        admin.from("Pass").select("toUserId,createdAt").eq("fromUserId", me.id)
       ]);
+
       const excludeIds = new Set<string>();
-      (blocks ?? []).forEach((b: any) => {
-        excludeIds.add(b.fromUserId);
-        excludeIds.add(b.toUserId);
-      });
+      (blocks ?? []).forEach((b: any) => { excludeIds.add(b.fromUserId); excludeIds.add(b.toUserId); });
       (myHooks ?? []).forEach((h: any) => excludeIds.add(h.toUserId));
       excludeIds.delete(me.id);
 
-      // Mutual visibility rule — a candidate is ONLY shown when:
-      //   1. their gender is in my showMe  (.in on gender)
-      //   2. my gender is in their showMe  (.contains on showMe)
-      // The second clause is what guarantees that, e.g., a gay man
-      // (showMe = ["man"]) NEVER appears to a woman (her gender "woman"
-      // isn't in his ["man"]), and a straight woman (showMe = ["man"])
-      // never appears to another woman either. Empty-showMe rows can't
-      // satisfy the contains check, so unfinished onboarding profiles
-      // are filtered out automatically.
+      // Recent passes (last 7d) are also excluded from the SQL pool. Older
+      // passes can re-enter but get a soft decay penalty from the
+      // recommender.
+      const PASS_WINDOW_MS = 7 * 24 * 60 * 60 * 1000;
+      const passedAt = new Map<string, string>();
+      const recentPasses = new Set<string>();
+      (myPasses ?? []).forEach((p: any) => {
+        passedAt.set(p.toUserId, p.createdAt);
+        if (Date.now() - new Date(p.createdAt).getTime() < PASS_WINDOW_MS) {
+          recentPasses.add(p.toUserId);
+        }
+      });
+      recentPasses.forEach((id) => excludeIds.add(id));
+
+      // Mutual visibility: candidate.gender ∈ my showMe AND my gender ∈
+      // candidate.showMe. Empty-showMe rows filtered out by the not-null
+      // check.
       let q = admin
         .from("User")
         .select(
-          "id,name,age,gender,orientation,bio,height,location,intentions,\"relationshipType\",verified,foundingMember,paused,showMe,lastSeenAt,createdAt," +
+          "id,name,age,gender,orientation,bio,height,location,intentions," +
+          "\"relationshipType\",verified,foundingMember,paused,showMe,lastSeenAt,createdAt," +
           "photos:Photo(id,url,position)," +
           "userPrompts:UserPrompt(id,answer,position,prompt:Prompt(id,text))"
         )
@@ -112,48 +102,34 @@ export default async function DiscoverPage() {
         q = q.not("id", "in", `(${Array.from(excludeIds).join(",")})`);
       }
 
-      const { data, error } = await q.limit(40);
+      const { data, error } = await q.limit(80);
       if (error) throw error;
 
-      // Interest-overlap score — built dynamically from whatever profile
-      // fields both sides actually have populated. Snapshot my fields first
-      // because TypeScript's null-narrowing from the early redirect doesn't
-      // carry into nested closures.
-      const myIntentions = me.intentions;
-      const myRelType = me.relationshipType;
-      const myLocation = me.location;
-      const myAge = me.age;
-      const myFounding = me.foundingMember;
-
-      function overlapScore(c: any): number {
-        let s = 0;
-        if (myIntentions && c.intentions && myIntentions === c.intentions) s += 3;
-        if (myRelType && c.relationshipType && myRelType === c.relationshipType) s += 2;
-        if (myLocation && c.location && myLocation === c.location) s += 4;
-        if (myAge != null && c.age != null) {
-          const diff = Math.abs(Number(myAge) - Number(c.age));
-          if (diff <= 3) s += 2;
-          else if (diff <= 6) s += 1;
-        }
-        if (myFounding && c.foundingMember) s += 1;
-        return s;
-      }
-
-      candidates = ((data ?? []) as any[])
+      // Cap each profile to 5 photos rendered.
+      const pool = ((data ?? []) as any[])
         .filter((u) => (u.photos ?? []).length > 0 && (u.userPrompts ?? []).length > 0)
-        .map((u) => ({
-          ...u,
-          photos: [...(u.photos ?? [])].sort((a: any, b: any) => a.position - b.position),
-          userPrompts: [...(u.userPrompts ?? [])].sort((a: any, b: any) => a.position - b.position),
-          _score: overlapScore(u)
-        }))
-        .sort((a: any, b: any) => {
-          if (a._score !== b._score) return b._score - a._score;
-          const at = a.lastSeenAt ? new Date(a.lastSeenAt).getTime() : 0;
-          const bt = b.lastSeenAt ? new Date(b.lastSeenAt).getTime() : 0;
-          return bt - at;
-        })
-        .slice(0, 12);
+        .map((u): Candidate => {
+          const photos = [...(u.photos ?? [])].sort((a: any, b: any) => a.position - b.position).slice(0, 5);
+          const userPrompts = [...(u.userPrompts ?? [])].sort((a: any, b: any) => a.position - b.position);
+          return {
+            ...u,
+            photos,
+            userPrompts,
+            photoCount: photos.length,
+            promptCount: userPrompts.length
+          };
+        });
+
+      const meInput: Me = {
+        id: me.id,
+        age: me.age,
+        location: me.location,
+        intentions: me.intentions,
+        relationshipType: me.relationshipType,
+        foundingMember: me.foundingMember
+      };
+
+      candidates = rankCandidates(meInput, pool, passedAt, 30) as Candidate[];
     } catch (e) {
       console.error("discover query failed:", e);
       dbError = true;
@@ -174,8 +150,7 @@ export default async function DiscoverPage() {
 
         {dbError ? (
           <div className="card-line p-6 mx-4">
-            <p className="font-semibold text-lg">Couldn't load profiles.</p>
-            <p className="mt-2 text-muted text-sm">Try refreshing in a moment.</p>
+            <p className="font-semibold text-lg">We're slammed. Try again in a minute.</p>
           </div>
         ) : candidates.length === 0 ? (
           <div className="card-line p-6 mx-4">

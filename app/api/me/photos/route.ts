@@ -24,6 +24,16 @@ export async function POST(req: Request) {
   const parsed = schema.safeParse(await req.json());
   if (!parsed.success) return NextResponse.json({ error: "Invalid" }, { status: 400 });
 
+  // Hard cap at 5 photos per user. UI also enforces this but server is
+  // the source of truth.
+  const { count } = await admin
+    .from("Photo")
+    .select("id", { count: "exact", head: true })
+    .eq("userId", me.id);
+  if ((count ?? 0) >= 5) {
+    return NextResponse.json({ error: "Max 5 photos. Remove one first." }, { status: 400 });
+  }
+
   const { data: existing } = await admin
     .from("Photo")
     .select("position")

@@ -4,21 +4,31 @@ import { useState } from "react";
 import { X as XIcon, Heart as HeartIcon } from "lucide-react";
 import { ProfileCard, type Candidate } from "./profile-card";
 
-// Shows one profile at a time. Floating Pass (left) + Hook (right) FABs sit
-// fixed above the bottom nav and operate on the visible profile.
 export function DiscoverDeck({ candidates }: { candidates: Candidate[] }) {
   const [idx, setIdx] = useState(0);
-  const [hooking, setHooking] = useState(false);
+  const [busy, setBusy] = useState<"hook" | "pass" | null>(null);
 
   const current = candidates[idx];
 
-  function pass() {
+  async function pass() {
+    if (!current || busy) return;
+    setBusy("pass");
+    // Advance optimistically; record the pass in the background.
     setIdx((i) => i + 1);
+    try {
+      await fetch("/api/passes", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ toUserId: current.id })
+      });
+    } catch {}
+    setBusy(null);
   }
 
   async function hook() {
-    if (!current || hooking) return;
-    setHooking(true);
+    if (!current || busy) return;
+    setBusy("hook");
+    setIdx((i) => i + 1);
     try {
       await fetch("/api/hooks", {
         method: "POST",
@@ -32,8 +42,7 @@ export function DiscoverDeck({ candidates }: { candidates: Candidate[] }) {
         })
       });
     } catch {}
-    setHooking(false);
-    setIdx((i) => i + 1);
+    setBusy(null);
   }
 
   if (!current) {
@@ -61,8 +70,9 @@ export function DiscoverDeck({ candidates }: { candidates: Candidate[] }) {
           <button
             type="button"
             onClick={pass}
+            disabled={busy !== null}
             aria-label="Pass"
-            className="pointer-events-auto w-14 h-14 rounded-full bg-white border border-hairline flex items-center justify-center transition active:scale-95"
+            className="pointer-events-auto w-14 h-14 rounded-full bg-white border border-hairline flex items-center justify-center transition active:scale-95 disabled:opacity-60"
             style={{ boxShadow: "0 4px 16px rgba(0,0,0,0.12)" }}
           >
             <XIcon size={26} strokeWidth={2.25} className="text-ink" />
@@ -70,7 +80,7 @@ export function DiscoverDeck({ candidates }: { candidates: Candidate[] }) {
           <button
             type="button"
             onClick={hook}
-            disabled={hooking}
+            disabled={busy !== null}
             aria-label="Hook"
             className="pointer-events-auto w-14 h-14 rounded-full bg-white border border-hairline flex items-center justify-center transition active:scale-95 disabled:opacity-60"
             style={{ boxShadow: "0 4px 16px rgba(0,0,0,0.12)" }}

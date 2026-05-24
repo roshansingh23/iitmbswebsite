@@ -344,6 +344,16 @@ model Block {
   @@unique([fromUserId, toUserId])
 }
 
+model Pass {
+  id         String   @id @default(cuid())
+  fromUserId String
+  toUserId   String
+  createdAt  DateTime @default(now())
+
+  @@unique([fromUserId, toUserId])
+  @@index([fromUserId, createdAt(sort: Desc)])
+}
+
 enum PaymentKind {
   plus
   insights
