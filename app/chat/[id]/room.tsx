@@ -2,11 +2,22 @@
 
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
-import { ArrowLeft, Send, BadgeCheck } from "lucide-react";
+import { ArrowLeft, BadgeCheck } from "lucide-react";
 import { supabaseBrowser } from "@/lib/supabase-browser";
 import { ChatMenu } from "@/components/chat-menu";
+import { Button } from "@/components/ui/button";
 
 type Msg = { id: string; body: string; fromUserId: string; createdAt: string };
+
+// Lives INSIDE AppShell, so the black bottom-tab nav is still there.
+// Layout from top to bottom inside the shell's main:
+//   - Fixed chat header (back arrow + name + 3-dot)
+//   - Scrollable messages
+//   - Fixed chat input row, anchored just above the bottom tab nav
+
+// Bottom nav from AppShell sits at the very bottom (~64px + safe-area).
+// Input row sits just above that.
+const NAV_HEIGHT_PX = 64;
 
 export function ChatRoom({
   conversationId,
@@ -14,7 +25,6 @@ export function ChatRoom({
   otherUserId,
   otherName,
   otherVerified,
-  icebreaker,
   initialMessages,
   initialLocked
 }: {
@@ -23,7 +33,6 @@ export function ChatRoom({
   otherUserId: string;
   otherName: string;
   otherVerified: boolean;
-  icebreaker: { question: string; answer: string } | null;
   initialMessages: Msg[];
   initialLocked: boolean;
 }) {
@@ -37,7 +46,7 @@ export function ChatRoom({
     scroller.current?.scrollTo({ top: scroller.current.scrollHeight, behavior: "smooth" });
   }, [msgs.length]);
 
-  // Activity heartbeat (silent — no timer UI).
+  // Activity heartbeat (no timer UI).
   useEffect(() => {
     function ping() {
       if (document.visibilityState !== "visible") return;
@@ -48,7 +57,7 @@ export function ChatRoom({
     return () => clearInterval(t);
   }, [conversationId]);
 
-  // Realtime via Supabase broadcast, with polling fallback.
+  // Realtime + polling fallback.
   useEffect(() => {
     const sb = supabaseBrowser();
     if (!sb) {
@@ -77,15 +86,14 @@ export function ChatRoom({
     return () => { channel.unsubscribe(); };
   }, [conversationId, msgs]);
 
-  async function send(text?: string) {
-    const payload = (text ?? body).trim();
-    if (!payload || sending || locked) return;
+  async function send() {
+    if (!body.trim() || sending || locked) return;
     setSending(true);
     try {
       const res = await fetch(`/api/chat/${conversationId}/messages`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ body: payload })
+        body: JSON.stringify({ body: body.trim() })
       });
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
@@ -94,15 +102,15 @@ export function ChatRoom({
       }
       const data = await res.json();
       setMsgs((m) => [...m, data.message]);
-      if (!text) setBody("");
+      setBody("");
     } finally {
       setSending(false);
     }
   }
 
   return (
-    <div className="min-h-screen flex flex-col bg-white">
-      {/* Fixed top — name + 3-dot menu */}
+    <>
+      {/* Fixed chat header */}
       <header className="fixed top-0 inset-x-0 z-40 bg-white border-b border-hairline">
         <div className="mx-auto max-w-md h-14 px-3 flex items-center gap-2">
           <Link href="/matches" aria-label="Back" className="p-2 -ml-2 text-ink">
@@ -123,21 +131,18 @@ export function ChatRoom({
         </div>
       </header>
 
-      {/* Scrollable messages */}
+      {/* Scrollable messages, with breathing room for header + fixed input */}
       <div
         ref={scroller}
-        className="flex-1 overflow-y-auto"
-        style={{ paddingTop: "56px", paddingBottom: "80px" }}
+        className="overflow-y-auto"
+        style={{
+          paddingTop: "56px",
+          // height = viewport - top header (56) - input row (~64) - bottom nav (64) - safe area
+          minHeight: `calc(100vh - 56px - 64px - ${NAV_HEIGHT_PX}px - env(safe-area-inset-bottom))`,
+          paddingBottom: `calc(${NAV_HEIGHT_PX + 70}px + env(safe-area-inset-bottom))`
+        }}
       >
         <div className="mx-auto max-w-md px-4 py-4 space-y-3">
-          {msgs.length === 0 && icebreaker && (
-            <Icebreaker
-              question={icebreaker.question}
-              answer={icebreaker.answer}
-              onPick={() => send(`About "${icebreaker.question}" — `)}
-            />
-          )}
-
           {msgs.map((m) => (
             <div key={m.id} className={m.fromUserId === meId ? "flex justify-end" : "flex justify-start"}>
               <div
@@ -155,17 +160,16 @@ export function ChatRoom({
         </div>
       </div>
 
-      {/* Fixed bottom — either input or, when locked, upgrade CTA */}
+      {/* Fixed input row, just above the bottom tab nav */}
       <div
-        className="fixed inset-x-0 z-40"
-        style={{ bottom: 0, paddingBottom: "env(safe-area-inset-bottom)", background: "white" }}
+        className="fixed inset-x-0 z-30 bg-white border-t border-hairline"
+        style={{ bottom: `calc(${NAV_HEIGHT_PX}px + env(safe-area-inset-bottom))` }}
       >
-        <div className="mx-auto max-w-md border-t border-hairline">
+        <div className="mx-auto max-w-md px-4 py-3">
           {locked ? (
-            <div className="px-4 py-3 flex items-center justify-between gap-3">
+            <div className="flex items-center justify-between gap-3">
               <p className="text-sm leading-snug">
-                This chat is paused.<br />
-                Upgrade to keep talking.
+                This chat is paused. Upgrade to keep talking.
               </p>
               <Link
                 href="/upgrade"
@@ -175,7 +179,7 @@ export function ChatRoom({
               </Link>
             </div>
           ) : (
-            <div className="px-3 py-2 flex items-end gap-2">
+            <div className="flex items-end gap-3">
               <textarea
                 value={body}
                 onChange={(e) => setBody(e.target.value)}
@@ -185,42 +189,13 @@ export function ChatRoom({
                 placeholder="Message"
                 rows={1}
                 maxLength={1000}
-                className="flex-1 resize-none border border-hairline rounded-full px-4 py-2.5 text-sm focus:outline-none focus:border-ink"
+                className="field min-h-[2.5rem] resize-none"
               />
-              <button
-                type="button"
-                onClick={() => send()}
-                disabled={sending || !body.trim()}
-                aria-label="Send"
-                className="shrink-0 w-10 h-10 rounded-full bg-ink text-white flex items-center justify-center disabled:opacity-50"
-              >
-                <Send size={18} strokeWidth={2} />
-              </button>
+              <Button onClick={send} disabled={sending || !body.trim()}>Send</Button>
             </div>
           )}
         </div>
       </div>
-    </div>
-  );
-}
-
-function Icebreaker({
-  question, answer, onPick
-}: { question: string; answer: string; onPick: () => void }) {
-  return (
-    <article className="card-line p-5">
-      <p className="text-xs text-muted uppercase tracking-[0.18em] font-semibold">
-        Icebreaker
-      </p>
-      <p className="mt-3 text-sm text-muted">{question}</p>
-      <p className="mt-2 font-semibold text-lg leading-snug">"{answer}"</p>
-      <button
-        type="button"
-        onClick={onPick}
-        className="mt-4 px-4 py-2 rounded-full bg-ink text-white text-xs font-semibold tracking-[0.06em]"
-      >
-        Reply to this
-      </button>
-    </article>
+    </>
   );
 }
