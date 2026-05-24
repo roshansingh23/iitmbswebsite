@@ -1,11 +1,12 @@
 "use client";
 
 import { useState } from "react";
+import { Flame, BadgeCheck, Users } from "lucide-react";
 
-const KINDS: { key: string; label: string }[] = [
-  { key: "fire", label: "fire" },
-  { key: "real", label: "real" },
-  { key: "samesame", label: "same" }
+const KINDS: { key: string; Icon: any }[] = [
+  { key: "fire", Icon: Flame },
+  { key: "real", Icon: BadgeCheck },
+  { key: "samesame", Icon: Users }
 ];
 
 export function ConfessionReactions({
@@ -33,15 +34,18 @@ export function ConfessionReactions({
   }
 
   return (
-    <div className="flex items-center gap-2 text-xs">
-      {KINDS.map((k) => (
+    <div className="flex items-center gap-2">
+      {KINDS.map(({ key, Icon }) => (
         <button
-          key={k.key}
-          onClick={() => react(k.key)}
-          disabled={busy === k.key}
-          className="px-3 py-1 border border-hairline rounded-full hover:bg-tint transition"
+          key={key}
+          type="button"
+          onClick={() => react(key)}
+          disabled={busy === key}
+          aria-label={key}
+          className="inline-flex items-center gap-1.5 px-3 py-1.5 border border-hairline rounded-full hover:bg-tint transition active:scale-[0.95]"
         >
-          {k.label} <span className="text-muted ml-1">{counts[k.key] ?? 0}</span>
+          <Icon size={16} strokeWidth={1.75} className="text-ink" />
+          <span className="text-xs font-semibold tabular-nums">{counts[key] ?? 0}</span>
         </button>
       ))}
     </div>

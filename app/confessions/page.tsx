@@ -13,7 +13,6 @@ type Confession = {
   body: string;
   createdAt: string;
   reactions: { kind: string }[];
-  replies: { id: string }[];
 };
 
 export default async function ConfessionsPage({ searchParams }: { searchParams: { sort?: string } }) {
@@ -31,7 +30,7 @@ export default async function ConfessionsPage({ searchParams }: { searchParams: 
     try {
       const { data, error } = await admin
         .from("Confession")
-        .select("id,body,createdAt,reactions:ConfessionReaction(kind),replies:ConfessionReply(id)")
+        .select("id,body,createdAt,reactions:ConfessionReaction(kind)")
         .eq("approved", true)
         .order("createdAt", { ascending: false })
         .limit(80);
@@ -69,14 +68,11 @@ export default async function ConfessionsPage({ searchParams }: { searchParams: 
             {ordered.map((c) => (
               <li key={c.id} className="card-line p-5">
                 <p className="leading-relaxed">{c.body}</p>
-                <div className="mt-4 pt-3 border-t border-hairline flex items-center justify-between gap-3">
+                <div className="mt-4 pt-3 border-t border-hairline">
                   <ConfessionReactions
                     confessionId={c.id}
                     initial={countByKind(c.reactions ?? [])}
                   />
-                  <Link href={`/confessions/${c.id}`} className="text-xs underline text-muted">
-                    {(c.replies ?? []).length} {(c.replies ?? []).length === 1 ? "reply" : "replies"}
-                  </Link>
                 </div>
               </li>
             ))}
