@@ -3,22 +3,30 @@
 
 import { DEFAULT_CONFIG } from "../lib/config-defaults.ts";
 
+// Romantic / date-centric only. No casual or random prompts — we want
+// answers to spark date-worthy conversation, not small talk.
 const PROMPTS = [
   "A green flag I look for…",
-  "My toxic trait is…",
-  "Soft launch or hard launch person?",
-  "Two truths and a lie",
   "We'll get along if…",
-  "I'm weirdly good at…",
   "The way to my heart is…",
-  "I go quiet when…",
-  "The last thing I texted that made me laugh out loud",
-  "An unpopular opinion I'll die on",
-  "A small thing that means a lot to me",
   "I'll know I like you when…",
-  "My most controversial Spotify Wrapped",
-  "I'm convinced that…",
-  "The fastest way to my Saturday morning is…"
+  "Soft launch or hard launch person?",
+  "My idea of a perfect first date is…",
+  "I'll fall for you if…",
+  "A date I daydream about…",
+  "My love language is…",
+  "I want someone who…",
+  "The most romantic thing I've done…",
+  "A first-date ick I just can't…",
+  "I knew I had a crush when…",
+  "An ideal Sunday with you would be…",
+  "I'm looking for someone to…",
+  "My favorite kind of romance is…",
+  "I fall hardest for people who…",
+  "How I show I care is…",
+  "We should go on a date if you…",
+  "My ideal first kiss is…",
+  "I'm at my best in a relationship when…"
 ];
 
 const token = process.env.SB_TOKEN;
