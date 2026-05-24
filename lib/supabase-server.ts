@@ -1,10 +1,10 @@
-import { createServerClient, type CookieOptions } from "@supabase/ssr";
+import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
 import { createClient } from "@supabase/supabase-js";
 
-// Cookies-aware Supabase client for server components, route handlers, and
-// server actions. Reads + refreshes the auth session through the same cookie
-// jar Next.js uses for the request.
+// Cookie-aware Supabase client for server components, route handlers, and
+// server actions. Uses the @supabase/ssr v0.10+ getAll/setAll API so the
+// session cookies set during OAuth callback actually persist on the response.
 export function supabaseServer() {
   const cookieStore = cookies();
   return createServerClient(
@@ -12,20 +12,18 @@ export function supabaseServer() {
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     {
       cookies: {
-        get(name: string) {
-          return cookieStore.get(name)?.value;
+        getAll() {
+          return cookieStore.getAll();
         },
-        set(name: string, value: string, options: CookieOptions) {
+        setAll(cookiesToSet) {
           try {
-            cookieStore.set({ name, value, ...options });
+            cookiesToSet.forEach(({ name, value, options }) => {
+              cookieStore.set(name, value, options);
+            });
           } catch {
-            // Called from a Server Component; mutations not allowed. Safe to ignore.
+            // Server Components can't mutate cookies — ignore silently. The
+            // middleware refreshes the session on the next request anyway.
           }
-        },
-        remove(name: string, options: CookieOptions) {
-          try {
-            cookieStore.set({ name, value: "", ...options });
-          } catch {}
         }
       }
     }
