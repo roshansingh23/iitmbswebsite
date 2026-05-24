@@ -6,6 +6,9 @@ import { ChatRoom } from "./room";
 
 export const dynamic = "force-dynamic";
 
+// Define "active right now" as activity within the last 15 minutes.
+const ACTIVE_WINDOW_MS = 15 * 60 * 1000;
+
 export default async function ChatPage({ params }: { params: { id: string } }) {
   const me = await getSessionUser();
   if (!me) redirect("/login");
@@ -17,8 +20,8 @@ export default async function ChatPage({ params }: { params: { id: string } }) {
     .from("Conversation")
     .select(
       "id,userAId,userBId,locked,interactionSeconds,capSeconds," +
-      "userA:User!Conversation_userAId_fkey(id,name,verified)," +
-      "userB:User!Conversation_userBId_fkey(id,name,verified)"
+      "userA:User!Conversation_userAId_fkey(id,name,verified,lastSeenAt)," +
+      "userB:User!Conversation_userBId_fkey(id,name,verified,lastSeenAt)"
     )
     .eq("id", params.id)
     .maybeSingle();
@@ -27,6 +30,24 @@ export default async function ChatPage({ params }: { params: { id: string } }) {
   if ((conv as any).userAId !== me.id && (conv as any).userBId !== me.id) notFound();
 
   const other = (conv as any).userAId === me.id ? (conv as any).userB : (conv as any).userA;
+
+  // First photo for the header avatar
+  let otherPhoto: string | null = null;
+  if (other?.id) {
+    const { data: ph } = await admin
+      .from("Photo")
+      .select("url,position")
+      .eq("userId", other.id)
+      .order("position", { ascending: true })
+      .limit(1)
+      .maybeSingle();
+    if (ph) otherPhoto = (ph as any).url;
+  }
+
+  const otherActive =
+    other?.lastSeenAt
+      ? Date.now() - new Date(other.lastSeenAt).getTime() < ACTIVE_WINDOW_MS
+      : false;
 
   const { data: messages } = await admin
     .from("Message")
@@ -43,6 +64,8 @@ export default async function ChatPage({ params }: { params: { id: string } }) {
         otherUserId={other?.id ?? ""}
         otherName={other?.name ?? "—"}
         otherVerified={!!other?.verified}
+        otherActive={otherActive}
+        otherPhoto={otherPhoto}
         initialMessages={(messages ?? []).map((m: any) => ({
           id: m.id,
           body: m.body,

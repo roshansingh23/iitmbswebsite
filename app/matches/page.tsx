@@ -30,6 +30,8 @@ export default async function MatchesPage() {
     dbError = true;
   } else {
     try {
+      // Only matched (mutual) conversations appear in Chats. One-way
+      // requests live in /hooks?tab=sent until the other side hooks back.
       const { data, error } = await admin
         .from("Conversation")
         .select(
@@ -39,6 +41,7 @@ export default async function MatchesPage() {
           "messages:Message(body,createdAt)"
         )
         .or(`userAId.eq.${me.id},userBId.eq.${me.id}`)
+        .not("matchId", "is", null)
         .order("updatedAt", { ascending: false });
       if (error) throw error;
       convs = (data ?? []) as any;

@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { useEffect, useRef, useState } from "react";
 import { ArrowLeft, BadgeCheck } from "lucide-react";
 import { supabaseBrowser } from "@/lib/supabase-browser";
@@ -9,14 +10,6 @@ import { Button } from "@/components/ui/button";
 
 type Msg = { id: string; body: string; fromUserId: string; createdAt: string };
 
-// Lives INSIDE AppShell, so the black bottom-tab nav is still there.
-// Layout from top to bottom inside the shell's main:
-//   - Fixed chat header (back arrow + name + 3-dot)
-//   - Scrollable messages
-//   - Fixed chat input row, anchored just above the bottom tab nav
-
-// Bottom nav from AppShell sits at the very bottom (~64px + safe-area).
-// Input row sits just above that.
 const NAV_HEIGHT_PX = 64;
 
 export function ChatRoom({
@@ -25,6 +18,8 @@ export function ChatRoom({
   otherUserId,
   otherName,
   otherVerified,
+  otherActive,
+  otherPhoto,
   initialMessages,
   initialLocked
 }: {
@@ -33,6 +28,8 @@ export function ChatRoom({
   otherUserId: string;
   otherName: string;
   otherVerified: boolean;
+  otherActive: boolean;
+  otherPhoto: string | null;
   initialMessages: Msg[];
   initialLocked: boolean;
 }) {
@@ -46,7 +43,6 @@ export function ChatRoom({
     scroller.current?.scrollTo({ top: scroller.current.scrollHeight, behavior: "smooth" });
   }, [msgs.length]);
 
-  // Activity heartbeat (no timer UI).
   useEffect(() => {
     function ping() {
       if (document.visibilityState !== "visible") return;
@@ -57,7 +53,6 @@ export function ChatRoom({
     return () => clearInterval(t);
   }, [conversationId]);
 
-  // Realtime + polling fallback.
   useEffect(() => {
     const sb = supabaseBrowser();
     if (!sb) {
@@ -89,16 +84,8 @@ export function ChatRoom({
   async function send() {
     const text = body.trim();
     if (!text || sending || locked) return;
-    // Optimistic UI: clear the input and render the message immediately
-    // so the tap feels instant. Reconcile or roll back once the server
-    // responds.
     const tempId = `temp-${Date.now()}`;
-    const optimistic: Msg = {
-      id: tempId,
-      body: text,
-      fromUserId: meId,
-      createdAt: new Date().toISOString()
-    };
+    const optimistic: Msg = { id: tempId, body: text, fromUserId: meId, createdAt: new Date().toISOString() };
     setBody("");
     setMsgs((m) => [...m, optimistic]);
     setSending(true);
@@ -111,12 +98,10 @@ export function ChatRoom({
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
         if (data?.locked) setLocked(true);
-        // Roll back the optimistic message.
         setMsgs((m) => m.filter((x) => x.id !== tempId));
         return;
       }
       const data = await res.json();
-      // Swap the temp message for the real one (with the canonical id).
       setMsgs((m) => m.map((x) => (x.id === tempId ? data.message : x)));
     } catch {
       setMsgs((m) => m.filter((x) => x.id !== tempId));
@@ -127,34 +112,51 @@ export function ChatRoom({
 
   return (
     <>
-      {/* Fixed chat header */}
+      {/* Fixed chat header with avatar + name + active dot + 3-dot menu */}
       <header className="fixed top-0 inset-x-0 z-40 bg-white border-b border-hairline">
         <div className="mx-auto max-w-md h-14 px-3 flex items-center gap-2">
-          <Link href="/matches" aria-label="Back" className="p-2 -ml-2 text-ink">
+          <Link href="/matches" aria-label="Back" className="p-2 -ml-2 text-ink active:scale-95 transition">
             <ArrowLeft size={22} strokeWidth={2} />
           </Link>
-          <div className="flex-1 flex items-center gap-1.5 min-w-0">
-            <h1 className="font-extrabold text-lg tracking-[-0.02em] truncate">{otherName}</h1>
-            {otherVerified && (
-              <BadgeCheck
-                size={18}
-                strokeWidth={2}
-                style={{ color: "#D43A2F", fill: "transparent" }}
-                aria-label="Verified"
-              />
-            )}
-          </div>
+
+          <Link
+            href={`/profile/${otherUserId}`}
+            className="flex-1 flex items-center gap-3 min-w-0 active:opacity-70 transition"
+          >
+            <div className="relative w-9 h-9 rounded-full overflow-hidden bg-tint shrink-0">
+              {otherPhoto && (
+                <Image src={otherPhoto} alt="" fill className="object-cover" sizes="36px" />
+              )}
+              {otherActive && (
+                <span
+                  className="absolute bottom-0 right-0 w-3 h-3 rounded-full border-2 border-white"
+                  style={{ background: "#22C55E" }}
+                  aria-label="Active"
+                />
+              )}
+            </div>
+            <div className="flex items-center gap-1 min-w-0">
+              <h1 className="font-extrabold text-base tracking-[-0.02em] truncate">{otherName}</h1>
+              {otherVerified && (
+                <BadgeCheck
+                  size={16}
+                  strokeWidth={2}
+                  style={{ color: "#D43A2F", fill: "transparent" }}
+                  aria-label="Verified"
+                />
+              )}
+            </div>
+          </Link>
+
           <ChatMenu otherUserId={otherUserId} otherName={otherName} />
         </div>
       </header>
 
-      {/* Scrollable messages, with breathing room for header + fixed input */}
       <div
         ref={scroller}
         className="overflow-y-auto"
         style={{
           paddingTop: "56px",
-          // height = viewport - top header (56) - input row (~64) - bottom nav (64) - safe area
           minHeight: `calc(100vh - 56px - 64px - ${NAV_HEIGHT_PX}px - env(safe-area-inset-bottom))`,
           paddingBottom: `calc(${NAV_HEIGHT_PX + 70}px + env(safe-area-inset-bottom))`
         }}
@@ -177,7 +179,6 @@ export function ChatRoom({
         </div>
       </div>
 
-      {/* Fixed input row, just above the bottom tab nav */}
       <div
         className="fixed inset-x-0 z-30 bg-white border-t border-hairline"
         style={{ bottom: `calc(${NAV_HEIGHT_PX}px + env(safe-area-inset-bottom))` }}
