@@ -104,58 +104,111 @@ function Chip({ href, label, active }: { href: string; label: string; active: bo
 function EmptyArtifact() {
   return (
     <div className="mt-10 flex flex-col items-center text-center pb-8">
-      <NoteIllustration />
-      <p className="mt-8 font-extrabold text-2xl tracking-[-0.03em]">Nothing yet.</p>
-      <p className="mt-1.5 text-sm text-muted">First one is the bravest.</p>
+      <SpilledTea />
+      <p className="mt-6 font-extrabold text-2xl tracking-[-0.03em]">No tea yet.</p>
+      <p className="mt-1.5 text-sm text-muted">Spill the first one.</p>
     </div>
   );
 }
 
-// Two stacked, slightly-rotated note papers with handwritten-style lines.
-// Custom illustration — keeps the monochrome palette and reads as
-// 'passing a note', which is what a confessions wall is.
-function NoteIllustration() {
+// A tipped teacup with a single curved stream pouring out into a small
+// puddle. Hand-tuned coordinates, monochrome strokes, no library art —
+// fits the "spill the tea" idea literally.
+function SpilledTea() {
   return (
     <svg
-      width="128"
-      height="128"
-      viewBox="0 0 128 128"
+      width="156"
+      height="156"
+      viewBox="0 0 156 156"
       fill="none"
       aria-hidden
     >
-      {/* back paper */}
-      <g transform="rotate(9 64 64)">
-        <rect
-          x="32"
-          y="26"
-          width="64"
-          height="82"
-          rx="3"
-          fill="white"
-          stroke="#E4DFD4"
-          strokeWidth="1.25"
-        />
-        <line x1="42" y1="44" x2="84" y2="44" stroke="#E4DFD4" strokeWidth="1.25" strokeLinecap="round" />
-        <line x1="42" y1="56" x2="78" y2="56" stroke="#E4DFD4" strokeWidth="1.25" strokeLinecap="round" />
-        <line x1="42" y1="68" x2="82" y2="68" stroke="#E4DFD4" strokeWidth="1.25" strokeLinecap="round" />
-      </g>
-      {/* front paper */}
-      <g transform="rotate(-6 64 64)">
-        <rect
-          x="26"
-          y="20"
-          width="68"
-          height="84"
-          rx="3"
+      {/* saucer */}
+      <ellipse cx="56" cy="138" rx="36" ry="5" fill="#1C1B19" opacity="0.08" />
+      <ellipse
+        cx="56"
+        cy="135"
+        rx="32"
+        ry="3"
+        fill="none"
+        stroke="#1C1B19"
+        strokeWidth="1.4"
+      />
+
+      {/* splash droplets near the puddle */}
+      <circle cx="20" cy="130" r="2" fill="#1C1B19" />
+      <circle cx="92" cy="128" r="2.2" fill="#1C1B19" />
+      <path
+        d="M 28 124 q 2 -3 4 0"
+        stroke="#1C1B19"
+        strokeWidth="1.4"
+        strokeLinecap="round"
+        fill="none"
+      />
+      <path
+        d="M 84 122 q 2 -3 4 0"
+        stroke="#1C1B19"
+        strokeWidth="1.4"
+        strokeLinecap="round"
+        fill="none"
+      />
+
+      {/* puddle of tea on the saucer */}
+      <ellipse cx="56" cy="132" rx="24" ry="3" fill="#1C1B19" />
+
+      {/* falling tea stream — curved from cup rim down to puddle */}
+      <path
+        d="M 78 58 C 70 78 60 100 56 128"
+        stroke="#1C1B19"
+        strokeWidth="3.5"
+        strokeLinecap="round"
+        fill="none"
+      />
+
+      {/* teacup — tipped ~40 degrees to the right */}
+      <g transform="rotate(38 100 56)">
+        {/* cup body */}
+        <path
+          d="M 78 26 L 78 64 Q 78 72 86 72 L 114 72 Q 122 72 122 64 L 122 26 Z"
           fill="white"
           stroke="#1C1B19"
-          strokeWidth="1.5"
+          strokeWidth="2"
+          strokeLinejoin="round"
         />
-        <line x1="36" y1="38" x2="84" y2="38" stroke="#1C1B19" strokeWidth="1.4" strokeLinecap="round" />
-        <line x1="36" y1="50" x2="78" y2="50" stroke="#1C1B19" strokeWidth="1.4" strokeLinecap="round" />
-        <line x1="36" y1="62" x2="82" y2="62" stroke="#1C1B19" strokeWidth="1.4" strokeLinecap="round" />
-        <line x1="36" y1="74" x2="64" y2="74" stroke="#1C1B19" strokeWidth="1.4" strokeLinecap="round" />
+        {/* tea inside cup (visible at the angled rim) */}
+        <path
+          d="M 78 26 Q 80 34 86 34 L 114 34 Q 120 34 122 26 Z"
+          fill="#1C1B19"
+        />
+        {/* rim ellipse */}
+        <ellipse
+          cx="100"
+          cy="26"
+          rx="22"
+          ry="4"
+          fill="white"
+          stroke="#1C1B19"
+          strokeWidth="2"
+        />
+        {/* handle */}
+        <path
+          d="M 122 36 Q 138 40 138 52 Q 138 62 122 62"
+          fill="none"
+          stroke="#1C1B19"
+          strokeWidth="2"
+          strokeLinecap="round"
+        />
       </g>
+
+      {/* a small steam wisp above (calls back to the rest state) */}
+      <path
+        d="M 96 16 q 4 -6 0 -12"
+        stroke="#1C1B19"
+        strokeWidth="1.4"
+        strokeLinecap="round"
+        fill="none"
+        opacity="0.5"
+      />
     </svg>
   );
 }
