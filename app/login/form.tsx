@@ -47,8 +47,8 @@ export function LoginForm() {
           text so an invalid / non-IITM email is impossible to miss. */}
       {error && (
         <div
-          className="mt-8 rounded-xl bg-white border border-hairline px-4 py-3"
-          style={{ boxShadow: "0 4px 18px rgba(0,0,0,0.10)" }}
+          className="mt-8 rounded-xl bg-white px-4 py-3"
+          style={{ boxShadow: "0 6px 22px rgba(0,0,0,0.28)" }}
           role="alert"
         >
           <p className="text-sm font-semibold text-ink">{error}</p>
@@ -59,7 +59,8 @@ export function LoginForm() {
         type="button"
         onClick={signInWithGoogle}
         disabled={busy}
-        className="mt-6 w-full inline-flex items-center justify-center gap-3 border border-ink rounded-full px-5 py-3 text-sm font-semibold hover:bg-tint transition disabled:opacity-50"
+        className="mt-7 w-full inline-flex items-center justify-center gap-3 rounded-full px-5 py-3.5 text-sm font-semibold text-white transition active:scale-[0.99] disabled:opacity-60"
+        style={{ background: "#6D1F4E", boxShadow: "0 6px 22px rgba(109,31,78,0.45)" }}
       >
         <GoogleMark />
         {busy ? "Opening Google…" : "Continue with Google"}
