@@ -16,6 +16,9 @@ type Initial = {
   gender: Gender | null;
   orientation: Orientation | null;
   showMe: Gender[];
+  height: string | null;
+  intentions: string | null;
+  relationshipType: string | null;
 };
 
 const GENDERS: { value: Gender; label: string }[] = [
@@ -35,6 +38,14 @@ const ORIENTATIONS: { value: Orientation; label: string }[] = [
   { value: "other", label: "Other" }
 ];
 
+const INTENTIONS = [
+  "Short-term", "Long-term", "Marriage", "Casual", "Friends first", "Figuring it out"
+];
+
+const RELATIONSHIP_TYPES = ["Monogamy", "Ethical non-monogamy", "Open to all"];
+
+const STEP_COUNT = 6;
+
 export function OnboardingFlow({
   initial,
   promptBank
@@ -49,7 +60,7 @@ export function OnboardingFlow({
   const [answers, setAnswers] = useState<{ promptId: string; answer: string }[]>([]);
   const [saving, setSaving] = useState(false);
 
-  function next() { setStep((s) => Math.min(s + 1, 4)); }
+  function next() { setStep((s) => Math.min(s + 1, STEP_COUNT - 1)); }
   function back() { setStep((s) => Math.max(s - 1, 0)); }
 
   async function submit() {
@@ -104,6 +115,36 @@ export function OnboardingFlow({
       )}
 
       {step === 2 && (
+        <section className="space-y-10">
+          <div>
+            <Label htmlFor="height">Height</Label>
+            <Input
+              id="height"
+              value={state.height ?? ""}
+              onChange={(e) => setState((s) => ({ ...s, height: e.target.value || null }))}
+              placeholder={`e.g. 5'7" or 170 cm`}
+            />
+          </div>
+          <div>
+            <Label>Dating intentions</Label>
+            <ChipGroup
+              options={INTENTIONS.map((v) => ({ value: v, label: v }))}
+              value={state.intentions as any}
+              onChange={(v) => setState((s) => ({ ...s, intentions: v }))}
+            />
+          </div>
+          <div>
+            <Label>Relationship type</Label>
+            <ChipGroup
+              options={RELATIONSHIP_TYPES.map((v) => ({ value: v, label: v }))}
+              value={state.relationshipType as any}
+              onChange={(v) => setState((s) => ({ ...s, relationshipType: v }))}
+            />
+          </div>
+        </section>
+      )}
+
+      {step === 3 && (
         <section>
           <Label>Photos</Label>
           <p className="text-xs text-muted -mt-1 mb-5">Add as many as you like. Drag to reorder.</p>
@@ -111,14 +152,14 @@ export function OnboardingFlow({
         </section>
       )}
 
-      {step === 3 && (
+      {step === 4 && (
         <section className="space-y-8">
           <Label>Answer three prompts</Label>
           <PromptAnswerer bank={promptBank} value={answers} onChange={setAnswers} />
         </section>
       )}
 
-      {step === 4 && (
+      {step === 5 && (
         <section className="space-y-6">
           <Label>Anything else</Label>
           <Textarea
@@ -131,7 +172,7 @@ export function OnboardingFlow({
 
       <div className="flex items-center justify-between pt-6 border-t border-hairline">
         <Button variant="line" onClick={back} disabled={step === 0}>Back</Button>
-        {step < 4 ? (
+        {step < STEP_COUNT - 1 ? (
           <Button onClick={next}>Continue</Button>
         ) : (
           <Button onClick={submit} disabled={saving}>{saving ? "Saving…" : "Finish"}</Button>
@@ -144,7 +185,7 @@ export function OnboardingFlow({
 function Stepper({ step }: { step: number }) {
   return (
     <ol className="flex items-center gap-2">
-      {Array.from({ length: 5 }).map((_, i) => (
+      {Array.from({ length: STEP_COUNT }).map((_, i) => (
         <li key={i} className={`h-[2px] flex-1 ${i <= step ? "bg-ink" : "bg-hairline"}`} />
       ))}
     </ol>
@@ -180,7 +221,7 @@ function ChipGroup<T extends string>({
             className={
               "px-4 py-2 rounded-full text-sm border transition " +
               (on
-                ? "bg-ink text-bone border-ink"
+                ? "bg-ink text-white border-ink"
                 : "border-hairline text-ink hover:bg-tint")
             }
           >
@@ -212,7 +253,6 @@ function PromptAnswerer({
     onChange(value.filter((_, j) => j !== i));
   }
 
-  // Seed three empty slots on first render — never mutate state during render.
   useEffect(() => {
     if (value.length === 0) {
       onChange([

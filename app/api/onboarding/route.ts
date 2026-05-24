@@ -12,6 +12,9 @@ const schema = z.object({
   gender: z.enum(["man", "woman", "nonbinary", "other"]).nullable(),
   orientation: z.enum(["straight", "gay", "lesbian", "bisexual", "pansexual", "asexual", "other"]).nullable(),
   showMe: z.array(z.enum(["man", "woman", "nonbinary", "other"])),
+  height: z.string().max(30).nullable().optional(),
+  intentions: z.string().max(60).nullable().optional(),
+  relationshipType: z.string().max(60).nullable().optional(),
   photos: z.array(z.object({ url: z.string().url(), publicId: z.string() })).max(20),
   answers: z.array(z.object({ promptId: z.string(), answer: z.string().min(1).max(280) })).max(6)
 });
@@ -26,29 +29,30 @@ export async function POST(req: Request) {
 
   const admin = supabaseAdmin();
   if (!admin) {
-    return NextResponse.json(
-      { error: "Server not configured (SUPABASE_SERVICE_ROLE_KEY missing)." },
-      { status: 503 }
-    );
+    return NextResponse.json({ error: "server misconfigured" }, { status: 503 });
   }
 
-  const json = await req.json();
-  const parsed = schema.safeParse(json);
+  const parsed = schema.safeParse(await req.json());
   if (!parsed.success) {
     return NextResponse.json({ error: "Invalid", details: parsed.error.flatten() }, { status: 400 });
   }
-  const { name, age, bio, gender, orientation, showMe, photos, answers } = parsed.data;
+  const {
+    name, age, bio, gender, orientation, showMe,
+    height, intentions, relationshipType,
+    photos, answers
+  } = parsed.data;
 
-  // 1) Update profile basics.
+  const now = new Date().toISOString();
+
+  // 1) Profile basics + lifestyle.
   const { error: updateErr } = await admin
     .from("User")
     .update({
-      name,
-      age,
-      bio,
-      gender,
-      orientation,
-      showMe
+      name, age, bio, gender, orientation, showMe,
+      height: height ?? null,
+      intentions: intentions ?? null,
+      relationshipType: relationshipType ?? null,
+      updatedAt: now
     })
     .eq("id", user.id);
   if (updateErr) {
@@ -64,7 +68,7 @@ export async function POST(req: Request) {
       url: p.url,
       publicId: p.publicId,
       position: i,
-      createdAt: new Date().toISOString()
+      createdAt: now
     }));
     const { error: photoErr } = await admin.from("Photo").insert(rows);
     if (photoErr) return NextResponse.json({ error: photoErr.message }, { status: 500 });
@@ -84,7 +88,7 @@ export async function POST(req: Request) {
       promptId,
       answer,
       position: i++,
-      createdAt: new Date().toISOString()
+      createdAt: now
     }));
     const { error: upErr } = await admin.from("UserPrompt").insert(rows);
     if (upErr) return NextResponse.json({ error: upErr.message }, { status: 500 });

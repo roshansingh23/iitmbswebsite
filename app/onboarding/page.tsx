@@ -34,7 +34,10 @@ export default async function OnboardingPage() {
               bio: user.bio ?? "",
               gender: user.gender as any,
               orientation: user.orientation as any,
-              showMe: user.showMe as any
+              showMe: user.showMe as any,
+              height: user.height,
+              intentions: user.intentions,
+              relationshipType: user.relationshipType
             }}
             promptBank={prompts}
           />
