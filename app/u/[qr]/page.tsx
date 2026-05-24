@@ -1,10 +1,16 @@
 import { notFound, redirect } from "next/navigation";
-import { db } from "@/lib/db";
+import { supabaseAdmin } from "@/lib/supabase-server";
 
-// /u/[qr] resolves a QR code to a profile page. Scanning instantly opens the
-// person's profile.
+// /u/[qr] resolves a QR token to a profile page.
 export default async function QrResolvePage({ params }: { params: { qr: string } }) {
-  const user = await db.user.findFirst({ where: { qrCode: params.qr }, select: { id: true } });
+  const admin = supabaseAdmin();
+  if (!admin) notFound();
+
+  const { data: user } = await admin
+    .from("User")
+    .select("id")
+    .eq("qrCode", params.qr)
+    .maybeSingle();
   if (!user) notFound();
-  redirect(`/profile/${user.id}`);
+  redirect(`/profile/${(user as any).id}`);
 }

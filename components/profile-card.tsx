@@ -8,7 +8,8 @@ import {
   Cake as CakeIcon,
   Quote as QuoteIcon,
   Sprout as SproutIcon,
-  Users as UsersIcon
+  Users as UsersIcon,
+  BadgeCheck as BadgeCheckIcon
 } from "lucide-react";
 import { ProfileMenu } from "./profile-menu";
 
@@ -70,7 +71,17 @@ export function ProfileCard({
   return (
     <article>
       <header className="px-1 mb-3 flex items-center justify-between">
-        <h2 className="font-extrabold text-3xl tracking-[-0.03em]">{candidate.name ?? "—"}</h2>
+        <div className="flex items-center gap-1.5 min-w-0">
+          <h2 className="font-extrabold text-3xl tracking-[-0.03em] truncate">{candidate.name ?? "—"}</h2>
+          {candidate.verified && (
+            <BadgeCheckIcon
+              size={22}
+              strokeWidth={2}
+              style={{ color: "#D43A2F", fill: "transparent" }}
+              aria-label="Verified"
+            />
+          )}
+        </div>
         <ProfileMenu
           candidateId={candidate.id}
           candidateName={candidate.name ?? "this profile"}
