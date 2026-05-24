@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
+import { InstallJoinButton } from "@/components/install-join-button";
 
 export function ScrollNav() {
   const [past, setPast] = useState(false);
@@ -75,7 +76,7 @@ export function ScrollNav() {
           </Link>
 
           <div className="ml-auto md:ml-0 md:justify-self-end">
-            <Link
+            <InstallJoinButton
               href="/login"
               className="inline-flex items-center justify-center gap-2 bg-ink text-white rounded-full font-semibold transition hover:opacity-90 whitespace-nowrap"
               style={{
@@ -85,7 +86,7 @@ export function ScrollNav() {
               }}
             >
               Join now
-            </Link>
+            </InstallJoinButton>
           </div>
         </div>
       </header>
@@ -137,13 +138,12 @@ export function ScrollNav() {
           </nav>
 
           <div className="px-6 mt-12">
-            <Link
+            <InstallJoinButton
               href="/login"
-              onClick={() => setMenuOpen(false)}
               className="inline-flex items-center justify-center w-full bg-white text-black py-4 rounded-full font-semibold text-sm tracking-[0.06em] hover:opacity-90 transition"
             >
-              Join now
-            </Link>
+              <span onClick={() => setMenuOpen(false)}>Join now</span>
+            </InstallJoinButton>
           </div>
 
           <div

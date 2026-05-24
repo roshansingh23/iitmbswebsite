@@ -30,15 +30,33 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="en" className={`${inter.variable} ${newsreader.variable}`}>
       <head>
-        {/* Suppress Chrome's "Add to Home screen" / install banner.
-            Some users were getting an install prompt after tapping Join
-            Now and reading it as a download. We don't ship a manifest,
-            but Chrome can still show the mini-infobar from engagement
-            heuristics — preventDefault'ing the event hides it. */}
+        {/* PWA icons + apple touch icon. The /icon-NNN routes are dynamic
+            handlers returning PNG; we wire them up explicitly because
+            the app/icon.tsx convention hits a known Windows build bug
+            in @vercel/og. */}
+        <link rel="icon" href="/icon-192" type="image/png" sizes="192x192" />
+        <link rel="apple-touch-icon" href="/icon-192" />
+        <meta name="apple-mobile-web-app-capable" content="yes" />
+        <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+        <meta name="apple-mobile-web-app-title" content="Mismatched" />
+        <meta name="mobile-web-app-capable" content="yes" />
+        <meta name="theme-color" content="#1C1B19" />
+        {/* Capture Chrome's install prompt as early as possible. Chrome
+            fires beforeinstallprompt once, sometimes before React has
+            hydrated; without this we'd miss it. The Join Now buttons
+            read window.__mismatchedInstallPrompt and trigger it on
+            user tap so install happens before sign-in. */}
         <script
           dangerouslySetInnerHTML={{
             __html:
-              "window.addEventListener('beforeinstallprompt',function(e){e.preventDefault();},{passive:false});"
+              "window.__mismatchedInstallPrompt=null;" +
+              "window.addEventListener('beforeinstallprompt',function(e){" +
+              "  e.preventDefault();" +
+              "  window.__mismatchedInstallPrompt=e;" +
+              "});" +
+              "window.addEventListener('appinstalled',function(){" +
+              "  window.__mismatchedInstallPrompt=null;" +
+              "});"
           }}
         />
       </head>

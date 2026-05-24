@@ -2,6 +2,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { ScrollNav } from "@/components/scroll-nav";
 import { DateSpots } from "@/components/date-spots";
+import { InstallJoinButton } from "@/components/install-join-button";
 
 const HERO_IMAGE = "https://ceranna.com/wp-content/uploads/2017/03/mg_7929.jpg";
 
@@ -247,7 +248,7 @@ function SiteFooter() {
           </p>
           <ul className="space-y-2 text-sm">
             <li><Link href="/login" className="hover:text-white/70 transition">Sign in</Link></li>
-            <li><Link href="/login" className="hover:text-white/70 transition">Join now</Link></li>
+            <li><InstallJoinButton href="/login" className="hover:text-white/70 transition">Join now</InstallJoinButton></li>
           </ul>
         </div>
 
