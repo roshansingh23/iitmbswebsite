@@ -102,7 +102,7 @@ html, body {
   outline: none;
   transition: border-color 180ms ease;
 }
-.field:focus { border-bottom-color: var(--ink); }
+.field:focus { border-bottom-color: var(--hairline); outline: none; }
 .field::placeholder { color: var(--muted); }
 textarea.field { min-height: 6rem; resize: vertical; line-height: 1.55; }
 
