@@ -110,103 +110,94 @@ function EmptyArtifact() {
   );
 }
 
-// A tipped teacup with a single curved stream pouring out into a small
-// puddle. Hand-tuned coordinates, monochrome strokes, no library art —
-// fits the "spill the tea" idea literally.
+// Tipped teacup with a single curved stream pouring into a puddle.
+// Coordinates were computed for a 30° clockwise rotation around the cup
+// centre at (60, 50) — the stream start point matches the post-rotation
+// position of the rim's lower edge so the liquid actually connects to the
+// cup mouth.
 function SpilledTea() {
   return (
     <svg
-      width="156"
-      height="156"
-      viewBox="0 0 156 156"
+      width="160"
+      height="160"
+      viewBox="0 0 160 160"
       fill="none"
       aria-hidden
     >
-      {/* saucer */}
-      <ellipse cx="56" cy="138" rx="36" ry="5" fill="#1C1B19" opacity="0.08" />
-      <ellipse
-        cx="56"
-        cy="135"
-        rx="32"
-        ry="3"
-        fill="none"
-        stroke="#1C1B19"
-        strokeWidth="1.4"
-      />
+      {/* Cup — tilted right */}
+      <g transform="rotate(30 60 50)">
+        {/* body */}
+        <rect
+          x="35"
+          y="22"
+          width="50"
+          height="56"
+          rx="4"
+          fill="white"
+          stroke="#1C1B19"
+          strokeWidth="2.5"
+          strokeLinejoin="round"
+        />
+        {/* rim ellipse */}
+        <ellipse
+          cx="60"
+          cy="22"
+          rx="25"
+          ry="4.5"
+          fill="white"
+          stroke="#1C1B19"
+          strokeWidth="2.5"
+        />
+        {/* tea visible inside at the rim */}
+        <ellipse cx="60" cy="22" rx="21" ry="3" fill="#1C1B19" />
+        {/* handle */}
+        <path
+          d="M 85 38 Q 100 42 100 52 Q 100 62 85 66"
+          fill="none"
+          stroke="#1C1B19"
+          strokeWidth="2.5"
+          strokeLinecap="round"
+        />
+      </g>
 
-      {/* splash droplets near the puddle */}
-      <circle cx="20" cy="130" r="2" fill="#1C1B19" />
-      <circle cx="92" cy="128" r="2.2" fill="#1C1B19" />
+      {/* Tea stream — starts at the post-rotation lower rim (~96, 38) */}
       <path
-        d="M 28 124 q 2 -3 4 0"
-        stroke="#1C1B19"
-        strokeWidth="1.4"
-        strokeLinecap="round"
-        fill="none"
-      />
-      <path
-        d="M 84 122 q 2 -3 4 0"
-        stroke="#1C1B19"
-        strokeWidth="1.4"
-        strokeLinecap="round"
-        fill="none"
-      />
-
-      {/* puddle of tea on the saucer */}
-      <ellipse cx="56" cy="132" rx="24" ry="3" fill="#1C1B19" />
-
-      {/* falling tea stream — curved from cup rim down to puddle */}
-      <path
-        d="M 78 58 C 70 78 60 100 56 128"
+        d="M 96 38 C 92 62, 88 92, 88 128"
         stroke="#1C1B19"
         strokeWidth="3.5"
         strokeLinecap="round"
         fill="none"
       />
 
-      {/* teacup — tipped ~40 degrees to the right */}
-      <g transform="rotate(38 100 56)">
-        {/* cup body */}
-        <path
-          d="M 78 26 L 78 64 Q 78 72 86 72 L 114 72 Q 122 72 122 64 L 122 26 Z"
-          fill="white"
-          stroke="#1C1B19"
-          strokeWidth="2"
-          strokeLinejoin="round"
-        />
-        {/* tea inside cup (visible at the angled rim) */}
-        <path
-          d="M 78 26 Q 80 34 86 34 L 114 34 Q 120 34 122 26 Z"
-          fill="#1C1B19"
-        />
-        {/* rim ellipse */}
-        <ellipse
-          cx="100"
-          cy="26"
-          rx="22"
-          ry="4"
-          fill="white"
-          stroke="#1C1B19"
-          strokeWidth="2"
-        />
-        {/* handle */}
-        <path
-          d="M 122 36 Q 138 40 138 52 Q 138 62 122 62"
-          fill="none"
-          stroke="#1C1B19"
-          strokeWidth="2"
-          strokeLinecap="round"
-        />
-      </g>
+      {/* Puddle of tea */}
+      <ellipse cx="88" cy="138" rx="30" ry="4" fill="#1C1B19" />
+      <ellipse
+        cx="88"
+        cy="140"
+        rx="40"
+        ry="5.5"
+        fill="none"
+        stroke="#1C1B19"
+        strokeWidth="1.4"
+        opacity="0.35"
+      />
 
-      {/* a small steam wisp above (calls back to the rest state) */}
+      {/* Splash droplets */}
+      <circle cx="58" cy="130" r="2" fill="#1C1B19" />
+      <circle cx="120" cy="130" r="2.5" fill="#1C1B19" />
       <path
-        d="M 96 16 q 4 -6 0 -12"
+        d="M 50 124 q 2 -3 4 0"
         stroke="#1C1B19"
         strokeWidth="1.4"
         strokeLinecap="round"
         fill="none"
-        opacity="0.5"
+      />
+      <path
+        d="M 124 122 q 2 -3 4 0"
+        stroke="#1C1B19"
+        strokeWidth="1.4"
+        strokeLinecap="round"
+        fill="none"
       />
     </svg>
   );
