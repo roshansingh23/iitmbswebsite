@@ -29,6 +29,19 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en" className={`${inter.variable} ${newsreader.variable}`}>
+      <head>
+        {/* Suppress Chrome's "Add to Home screen" / install banner.
+            Some users were getting an install prompt after tapping Join
+            Now and reading it as a download. We don't ship a manifest,
+            but Chrome can still show the mini-infobar from engagement
+            heuristics — preventDefault'ing the event hides it. */}
+        <script
+          dangerouslySetInnerHTML={{
+            __html:
+              "window.addEventListener('beforeinstallprompt',function(e){e.preventDefault();},{passive:false});"
+          }}
+        />
+      </head>
       <body className="min-h-screen bg-bone text-ink antialiased">{children}</body>
     </html>
   );
