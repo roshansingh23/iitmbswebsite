@@ -15,32 +15,65 @@ function urlBase64ToUint8Array(base64String: string): Uint8Array {
 }
 
 const VAPID_PUBLIC = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY ?? "";
+const STORAGE_KEY = "mm_push_prompted";
+
+async function subscribePush(): Promise<void> {
+  if (!VAPID_PUBLIC) return;
+  const reg = await navigator.serviceWorker.ready;
+  // Reuse an existing subscription if the browser already has one (e.g.
+  // user re-opens the PWA on a device they previously subscribed on).
+  const existing = await reg.pushManager.getSubscription();
+  const sub = existing
+    ? existing
+    : await reg.pushManager.subscribe({
+        userVisibleOnly: true,
+        applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC) as unknown as BufferSource
+      });
+  const json = sub.toJSON();
+  await fetch("/api/push/subscribe", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      endpoint: json.endpoint,
+      keys: { p256dh: json.keys?.p256dh, auth: json.keys?.auth }
+    })
+  });
+}
 
 export function PushPermissionPrompt() {
   const [show, setShow] = useState(false);
   const [busy, setBusy] = useState(false);
 
-  // Register the service worker once on mount. Idempotent — the browser
-  // skips if it's already installed.
+  // Register the service worker once. Idempotent.
   useEffect(() => {
     if (typeof navigator === "undefined") return;
     if (!("serviceWorker" in navigator)) return;
     navigator.serviceWorker.register("/sw.js").catch(() => {});
   }, []);
 
-  // Decide whether to show the soft prompt.
+  // Decide what to do on first app open:
+  //   - permission granted already → silently make sure the server has a
+  //     subscription on file, no UI
+  //   - default + never asked → show the one-time soft prompt right after
+  //     the splash settles
+  //   - denied or previously dismissed → do nothing
   useEffect(() => {
     if (typeof window === "undefined") return;
     if (!VAPID_PUBLIC) return;
     if (!("Notification" in window)) return;
     if (!("serviceWorker" in navigator)) return;
     if (!("PushManager" in window)) return;
-    if (Notification.permission !== "default") return;
-    if (sessionStorage.getItem("mm_push_prompted") === "1") return;
 
-    // Give the page a moment to settle so the prompt doesn't fight the
-    // splash screen.
-    const t = setTimeout(() => setShow(true), 4000);
+    if (Notification.permission === "granted") {
+      subscribePush().catch(() => {});
+      return;
+    }
+    if (Notification.permission === "denied") return;
+    if (localStorage.getItem(STORAGE_KEY) === "1") return;
+
+    // Show right after the splash overlay finishes (1.8s) so the prompt
+    // is among the first things the user sees on app open.
+    const t = setTimeout(() => setShow(true), 2000);
     return () => clearTimeout(t);
   }, []);
 
@@ -48,35 +81,22 @@ export function PushPermissionPrompt() {
     if (busy) return;
     setBusy(true);
     try {
-      sessionStorage.setItem("mm_push_prompted", "1");
+      // Stamp localStorage first — if the OS prompt is denied we still
+      // honour the "one time" intent and never re-ask.
+      localStorage.setItem(STORAGE_KEY, "1");
       const permission = await Notification.requestPermission();
       if (permission !== "granted") {
         setShow(false);
         return;
       }
-      const reg = await navigator.serviceWorker.ready;
-      const sub = await reg.pushManager.subscribe({
-        userVisibleOnly: true,
-        // Cast: PushManager's BufferSource typing chokes on the new
-        // generic Uint8Array<ArrayBufferLike> shape in TS 5.6+.
-        applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC) as unknown as BufferSource
-      });
-      const json = sub.toJSON();
-      await fetch("/api/push/subscribe", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          endpoint: json.endpoint,
-          keys: { p256dh: json.keys?.p256dh, auth: json.keys?.auth }
-        })
-      });
+      await subscribePush();
     } catch {}
     setShow(false);
     setBusy(false);
   }
 
   function dismiss() {
-    sessionStorage.setItem("mm_push_prompted", "1");
+    localStorage.setItem(STORAGE_KEY, "1");
     setShow(false);
   }
 
