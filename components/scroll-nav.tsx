@@ -3,9 +3,30 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 
+function isIOS() {
+  if (typeof navigator === "undefined") return false;
+  return /iPad|iPhone|iPod/.test(navigator.userAgent) && !(window as any).MSStream;
+}
+
 export function ScrollNav() {
   const [past, setPast] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
+  const [iosHint, setIosHint] = useState(false);
+
+  async function installApp() {
+    const deferred = typeof window !== "undefined" ? window.__mismatchedInstallPrompt : null;
+    if (deferred) {
+      try {
+        await deferred.prompt();
+        await deferred.userChoice.catch(() => null);
+      } catch {}
+      window.__mismatchedInstallPrompt = null;
+      setMenuOpen(false);
+      return;
+    }
+    if (isIOS()) { setIosHint(true); return; }
+    setMenuOpen(false);
+  }
 
   useEffect(() => {
     function onScroll() {
@@ -137,13 +158,18 @@ export function ScrollNav() {
           </nav>
 
           <div className="px-6 mt-12">
-            <Link
-              href="/login"
-              onClick={() => setMenuOpen(false)}
+            <button
+              type="button"
+              onClick={installApp}
               className="inline-flex items-center justify-center w-full bg-white text-black py-4 rounded-full font-semibold text-sm tracking-[0.06em] hover:opacity-90 transition"
             >
-              Join now
-            </Link>
+              Download app
+            </button>
+            {iosHint && (
+              <p className="mt-3 text-xs text-center" style={{ color: "rgba(255,255,255,0.7)" }}>
+                Tap <strong>Share</strong> → <strong>Add to Home Screen</strong> to install.
+              </p>
+            )}
           </div>
 
           <div

@@ -1,12 +1,28 @@
 import Image from "next/image";
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import { ScrollNav } from "@/components/scroll-nav";
 import { DateSpots } from "@/components/date-spots";
 import { DownloadBanner } from "@/components/download-banner";
+import { supabaseServer } from "@/lib/supabase-server";
+
+export const dynamic = "force-dynamic";
 
 const HERO_IMAGE = "https://ceranna.com/wp-content/uploads/2017/03/mg_7929.jpg";
 
-export default function Landing() {
+export default async function Landing() {
+  // Signed-in users have no reason to see the marketing page — send them
+  // into the app. Keeps a stray hit on "/" (e.g. after a desktop/mobile
+  // view toggle) from stranding them on the homepage. redirect() is kept
+  // outside the try so its internal throw isn't swallowed.
+  let authed = false;
+  try {
+    const supabase = supabaseServer();
+    const { data: { user } } = await supabase.auth.getUser();
+    authed = !!user;
+  } catch {}
+  if (authed) redirect("/discover");
+
   return (
     <div className="min-h-screen bg-white flex flex-col">
       <ScrollNav />
