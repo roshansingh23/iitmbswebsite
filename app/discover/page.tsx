@@ -115,15 +115,40 @@ export default async function DiscoverPage() {
       const { data, error } = await q.limit(40);
       if (error) throw error;
 
+      // Interest-overlap score — built dynamically from whatever profile
+      // fields both me and the candidate actually have populated. No
+      // hard-coded category list; each shared attribute that's filled in on
+      // both sides contributes to the score. The score becomes the primary
+      // sort key, so profiles with overlap come first.
+      function overlapScore(c: any): number {
+        let s = 0;
+        // Same dating intentions
+        if (me.intentions && c.intentions && me.intentions === c.intentions) s += 3;
+        // Same relationship-type expectation
+        if (me.relationshipType && c.relationshipType && me.relationshipType === c.relationshipType) s += 2;
+        // Same city / location
+        if (me.location && c.location && me.location === c.location) s += 4;
+        // Age proximity: bonus when within 3 years either way
+        if (me.age != null && c.age != null) {
+          const diff = Math.abs(Number(me.age) - Number(c.age));
+          if (diff <= 3) s += 2;
+          else if (diff <= 6) s += 1;
+        }
+        // Founding-member affinity (same cohort)
+        if (me.foundingMember && c.foundingMember) s += 1;
+        return s;
+      }
+
       candidates = ((data ?? []) as any[])
         .filter((u) => (u.photos ?? []).length > 0 && (u.userPrompts ?? []).length > 0)
         .map((u) => ({
           ...u,
           photos: [...(u.photos ?? [])].sort((a: any, b: any) => a.position - b.position),
-          userPrompts: [...(u.userPrompts ?? [])].sort((a: any, b: any) => a.position - b.position)
+          userPrompts: [...(u.userPrompts ?? [])].sort((a: any, b: any) => a.position - b.position),
+          _score: overlapScore(u)
         }))
-        .sort((a, b) => {
-          if (a.foundingMember !== b.foundingMember) return a.foundingMember ? -1 : 1;
+        .sort((a: any, b: any) => {
+          if (a._score !== b._score) return b._score - a._score;
           const at = a.lastSeenAt ? new Date(a.lastSeenAt).getTime() : 0;
           const bt = b.lastSeenAt ? new Date(b.lastSeenAt).getTime() : 0;
           return bt - at;
