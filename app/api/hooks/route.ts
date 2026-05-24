@@ -1,9 +1,7 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { db } from "@/lib/db";
 import { requireUser } from "@/lib/session";
-import { getConfigInt } from "@/lib/config";
-import { startOfUtcDay } from "@/lib/time";
+import { supabaseAdmin } from "@/lib/supabase-server";
 
 export const runtime = "nodejs";
 
@@ -15,90 +13,127 @@ const schema = z.object({
   isHardHook: z.boolean().default(false)
 });
 
+function cuid(prefix = "c") {
+  return prefix + Math.random().toString(36).slice(2, 14) + Math.random().toString(36).slice(2, 14);
+}
+
 export async function POST(req: Request) {
   const me = await requireUser().catch(() => null);
   if (!me) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
+
+  const admin = supabaseAdmin();
+  if (!admin) return NextResponse.json({ error: "server misconfigured" }, { status: 503 });
 
   const parsed = schema.safeParse(await req.json());
   if (!parsed.success) return NextResponse.json({ error: "Invalid" }, { status: 400 });
   const { toUserId, targetType, targetId, note, isHardHook } = parsed.data;
 
-  if (toUserId === me.id) return NextResponse.json({ error: "Can't hook yourself." }, { status: 400 });
+  if (toUserId === me.id) {
+    return NextResponse.json({ error: "Can't hook yourself." }, { status: 400 });
+  }
 
-  // Hard hooks require paid tier.
   if (isHardHook && me.accessTier === "free") {
-    return NextResponse.json({ error: "Hard hooks need Plus. Upgrade to send one." }, { status: 402 });
+    return NextResponse.json({ error: "Hard hooks need Plus." }, { status: 402 });
   }
 
-  // Daily cap for free tier.
-  if (me.accessTier === "free") {
-    const cap = await getConfigInt("freeDailyHookLimit");
-    const today = startOfUtcDay();
-    const used = await db.hook.count({
-      where: { fromUserId: me.id, createdAt: { gte: today } }
-    });
-    if (used >= cap) {
-      return NextResponse.json({ error: "You're out of hooks for today. They reset at midnight." }, { status: 429 });
-    }
+  // Block check both directions.
+  const { data: blocked } = await admin
+    .from("Block")
+    .select("id")
+    .or(`and(fromUserId.eq.${me.id},toUserId.eq.${toUserId}),and(fromUserId.eq.${toUserId},toUserId.eq.${me.id})`)
+    .limit(1)
+    .maybeSingle();
+  if (blocked) {
+    return NextResponse.json({ error: "Can't reach this person." }, { status: 403 });
   }
 
-  // Block check — neither side has blocked the other.
-  const blocked = await db.block.findFirst({
-    where: {
-      OR: [
-        { fromUserId: me.id, toUserId },
-        { fromUserId: toUserId, toUserId: me.id }
-      ]
-    }
-  });
-  if (blocked) return NextResponse.json({ error: "Can't reach this person." }, { status: 403 });
-
-  // Resolve and validate target ownership.
+  // Resolve photo / prompt target id by ownership.
   let photoId: string | null = null;
   let userPromptId: string | null = null;
   if (targetType === "photo" && targetId) {
-    const p = await db.photo.findFirst({ where: { id: targetId, userId: toUserId } });
-    if (!p) return NextResponse.json({ error: "Target not found." }, { status: 404 });
-    photoId = p.id;
+    const { data } = await admin.from("Photo").select("id").eq("id", targetId).eq("userId", toUserId).maybeSingle();
+    if (!data) return NextResponse.json({ error: "Target not found." }, { status: 404 });
+    photoId = data.id;
   }
   if (targetType === "prompt" && targetId) {
-    const up = await db.userPrompt.findFirst({ where: { id: targetId, userId: toUserId } });
-    if (!up) return NextResponse.json({ error: "Target not found." }, { status: 404 });
-    userPromptId = up.id;
+    const { data } = await admin.from("UserPrompt").select("id").eq("id", targetId).eq("userId", toUserId).maybeSingle();
+    if (!data) return NextResponse.json({ error: "Target not found." }, { status: 404 });
+    userPromptId = data.id;
   }
 
-  // Create or update the hook. Mutual-hook check after.
-  await db.hook.upsert({
-    where: { fromUserId_toUserId: { fromUserId: me.id, toUserId } },
-    create: {
-      fromUserId: me.id, toUserId,
-      targetType, photoId, userPromptId,
-      note, isHardHook
-    },
-    update: { targetType, photoId, userPromptId, note, isHardHook }
-  });
+  // Upsert the hook (unique on fromUserId + toUserId).
+  const existingRes = await admin
+    .from("Hook")
+    .select("id")
+    .eq("fromUserId", me.id)
+    .eq("toUserId", toUserId)
+    .maybeSingle();
 
-  // Mutual? Create match + conversation.
-  const reverse = await db.hook.findFirst({
-    where: { fromUserId: toUserId, toUserId: me.id }
-  });
+  if (existingRes.data?.id) {
+    await admin
+      .from("Hook")
+      .update({ targetType, photoId, userPromptId, note, isHardHook })
+      .eq("id", existingRes.data.id);
+  } else {
+    const { error: insErr } = await admin.from("Hook").insert({
+      id: cuid(),
+      fromUserId: me.id,
+      toUserId,
+      targetType,
+      photoId,
+      userPromptId,
+      note,
+      isHardHook,
+      seen: false,
+      createdAt: new Date().toISOString()
+    });
+    if (insErr) {
+      console.error("Hook insert failed:", insErr.message);
+      return NextResponse.json({ error: insErr.message }, { status: 500 });
+    }
+  }
+
+  // Mutual hook check — if they already hooked me, create Match + Conversation.
+  const { data: reverse } = await admin
+    .from("Hook")
+    .select("id")
+    .eq("fromUserId", toUserId)
+    .eq("toUserId", me.id)
+    .maybeSingle();
 
   if (reverse) {
-    // Canonical pair order to keep the unique key happy.
     const [a, b] = [me.id, toUserId].sort();
-    const match = await db.match.upsert({
-      where: { userAId_userBId: { userAId: a, userBId: b } },
-      create: { userAId: a, userBId: b },
-      update: {}
-    });
-
-    const freeCap = await getConfigInt("freeChatCapSeconds");
-    const conv = await db.conversation.upsert({
-      where: { matchId: match.id },
-      create: { matchId: match.id, userAId: a, userBId: b, capSeconds: freeCap },
-      update: {}
-    });
-    return NextResponse.json({ ok: true, matched: conv.id });
+    const now = new Date().toISOString();
+    const { data: existingMatch } = await admin
+      .from("Match")
+      .select("id")
+      .eq("userAId", a)
+      .eq("userBId", b)
+      .maybeSingle();
+    const matchId = existingMatch?.id ?? cuid();
+    if (!existingMatch) {
+      await admin.from("Match").insert({ id: matchId, userAId: a, userBId: b, createdAt: now });
+    }
+    const { data: existingConv } = await admin
+      .from("Conversation")
+      .select("id")
+      .eq("matchId", matchId)
+      .maybeSingle();
+    if (!existingConv) {
+      await admin.from("Conversation").insert({
+        id: cuid(),
+        matchId,
+        userAId: a,
+        userBId: b,
+        interactionSeconds: 0,
+        capSeconds: 900,
+        locked: false,
+        createdAt: now,
+        updatedAt: now
+      });
+    }
+    const { data: conv } = await admin.from("Conversation").select("id").eq("matchId", matchId).maybeSingle();
+    return NextResponse.json({ ok: true, matched: conv?.id });
   }
 
   return NextResponse.json({ ok: true });

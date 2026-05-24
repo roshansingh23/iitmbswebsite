@@ -1,92 +1,115 @@
-import Link from "next/link";
 import { redirect } from "next/navigation";
 import { getSessionUser } from "@/lib/session";
-import { db } from "@/lib/db";
+import { supabaseAdmin } from "@/lib/supabase-server";
 import { AppShell } from "@/components/app-shell";
-import { Badge } from "@/components/ui/badge";
 
 export const dynamic = "force-dynamic";
+
+type HookRow = {
+  id: string;
+  isHardHook: boolean;
+  note: string | null;
+  createdAt: string;
+  fromUserId: string;
+  toUserId: string;
+  other: { id: string; name: string | null } | null;
+};
 
 export default async function HooksPage() {
   const me = await getSessionUser();
   if (!me) redirect("/login");
 
-  // Incoming hooks the viewer can act on.
-  // Insights-tier users see WHO hooked them; free tier sees a count cue only.
-  const incoming = await db.hook.findMany({
-    where: { toUserId: me.id },
-    include: { fromUser: { include: { photos: { take: 1, orderBy: { position: "asc" } } } } },
-    orderBy: [{ isHardHook: "desc" }, { createdAt: "desc" }]
-  });
+  let incoming: HookRow[] = [];
+  let outgoing: HookRow[] = [];
+  let dbError = false;
 
-  const outgoing = await db.hook.findMany({
-    where: { fromUserId: me.id },
-    include: { toUser: { include: { photos: { take: 1, orderBy: { position: "asc" } } } } },
-    orderBy: { createdAt: "desc" }
-  });
+  const admin = supabaseAdmin();
+  if (!admin) {
+    dbError = true;
+  } else {
+    try {
+      const { data: inRows } = await admin
+        .from("Hook")
+        .select("id,isHardHook,note,createdAt,fromUserId,toUserId, fromUser:User!Hook_fromUserId_fkey(id,name)")
+        .eq("toUserId", me.id)
+        .order("isHardHook", { ascending: false })
+        .order("createdAt", { ascending: false });
+      incoming = ((inRows ?? []) as any[]).map((r) => ({ ...r, other: r.fromUser }));
+
+      const { data: outRows } = await admin
+        .from("Hook")
+        .select("id,isHardHook,note,createdAt,fromUserId,toUserId, toUser:User!Hook_toUserId_fkey(id,name)")
+        .eq("fromUserId", me.id)
+        .order("createdAt", { ascending: false });
+      outgoing = ((outRows ?? []) as any[]).map((r) => ({ ...r, other: r.toUser }));
+    } catch (e) {
+      console.error("hooks query failed:", e);
+      dbError = true;
+    }
+  }
 
   const canSeeIncoming = me.accessTier === "insights" || me.accessTier === "plus";
 
   return (
     <AppShell>
-      <div className="mx-auto max-w-3xl px-6 lg:px-10 py-12">
-        <p className="eyebrow">Your hooks</p>
-        <h1 className="display text-5xl mt-3">Lines in & out.</h1>
+      <div className="mx-auto max-w-md md:max-w-2xl px-4 sm:px-6 pt-6 pb-28">
+        <h1 className="font-extrabold text-2xl tracking-[-0.04em]">Hooks</h1>
 
-        <section className="mt-14">
-          <header className="flex items-baseline justify-between">
-            <h2 className="display text-3xl">Hooked you</h2>
+        {dbError && (
+          <div className="card-line p-5 mt-6">
+            <p className="font-semibold">Couldn't load hooks.</p>
+            <p className="text-muted text-sm mt-1">Try again in a moment.</p>
+          </div>
+        )}
+
+        <section className="mt-8">
+          <header className="flex items-baseline justify-between mb-3">
+            <h2 className="font-semibold text-lg">Hooked you</h2>
             <span className="text-xs text-muted">{incoming.length}</span>
           </header>
 
           {incoming.length === 0 ? (
-            <p className="mt-6 text-muted serif italic text-lg">No hooks yet — go shoot your shot.</p>
+            <p className="text-muted text-sm">No hooks yet — go shoot your shot.</p>
           ) : !canSeeIncoming ? (
-            <div className="mt-6 card-line p-7">
-              <p className="serif italic text-2xl">
+            <div className="card-line p-5">
+              <p className="font-semibold text-lg">
                 {incoming.length} {incoming.length === 1 ? "person has" : "people have"} hooked you.
               </p>
-              <p className="mt-3 text-muted text-sm">
-                Upgrade to Insights to see who they are and prioritise your replies.
+              <p className="mt-2 text-muted text-sm">
+                Upgrade to see who and prioritise your replies.
               </p>
-              <Link href="/upgrade" className="btn-ink mt-6 inline-flex">Upgrade</Link>
             </div>
           ) : (
-            <ul className="mt-8 space-y-6">
+            <ul className="space-y-3">
               {incoming.map((h) => (
-                <li key={h.id} className="card-line p-6 flex items-center justify-between gap-6">
-                  <div>
-                    <div className="flex items-baseline gap-3">
-                      <Link href={`/profile/${h.fromUser.id}`} className="display text-2xl">
-                        {h.fromUser.name ?? "—"}
-                      </Link>
-                      {h.isHardHook && <Badge>Hard hook</Badge>}
-                    </div>
-                    {h.note && (
-                      <p className="mt-3 prompt-a serif italic text-ink/90 max-w-md">"{h.note}"</p>
+                <li key={h.id} className="card-line p-4">
+                  <div className="flex items-baseline justify-between gap-3">
+                    <p className="font-semibold text-lg">{h.other?.name ?? "—"}</p>
+                    {h.isHardHook && (
+                      <span className="text-[0.6rem] uppercase tracking-[0.18em] font-semibold text-muted">
+                        Hard hook
+                      </span>
                     )}
                   </div>
-                  <Link href={`/profile/${h.fromUser.id}`} className="btn-line">Open</Link>
+                  {h.note && <p className="mt-2 text-sm text-ink/85">"{h.note}"</p>}
                 </li>
               ))}
             </ul>
           )}
         </section>
 
-        <section className="mt-20">
-          <header className="flex items-baseline justify-between">
-            <h2 className="display text-3xl">Lines out</h2>
+        <section className="mt-10">
+          <header className="flex items-baseline justify-between mb-3">
+            <h2 className="font-semibold text-lg">Lines out</h2>
             <span className="text-xs text-muted">{outgoing.length}</span>
           </header>
           {outgoing.length === 0 ? (
-            <p className="mt-6 text-muted serif italic text-lg">Nothing yet.</p>
+            <p className="text-muted text-sm">Nothing yet.</p>
           ) : (
-            <ul className="mt-8 space-y-4">
+            <ul className="divide-y divide-hairline">
               {outgoing.map((h) => (
-                <li key={h.id} className="flex items-center justify-between border-b border-hairline pb-3">
-                  <Link href={`/profile/${h.toUser.id}`} className="text-lg">
-                    {h.toUser.name ?? "—"}
-                  </Link>
+                <li key={h.id} className="py-3 flex items-center justify-between">
+                  <span>{h.other?.name ?? "—"}</span>
                   <span className="text-xs text-muted">
                     {new Date(h.createdAt).toLocaleDateString()}
                   </span>

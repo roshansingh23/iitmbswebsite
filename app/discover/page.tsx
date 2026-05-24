@@ -1,14 +1,29 @@
-import Link from "next/link";
 import { redirect } from "next/navigation";
+import Image from "next/image";
 import { getSessionUser } from "@/lib/session";
 import { supabaseAdmin } from "@/lib/supabase-server";
 import { gendersIWant } from "@/lib/matching";
 import { AppShell } from "@/components/app-shell";
-import { PromptBlock } from "@/components/prompt-block";
-import { PhotoCard } from "@/components/photo-card";
-import { Badge } from "@/components/ui/badge";
+import { ProfileCard } from "@/components/profile-card";
 
 export const dynamic = "force-dynamic";
+
+type Candidate = {
+  id: string;
+  name: string | null;
+  age: number | null;
+  gender: string | null;
+  orientation: string | null;
+  bio: string | null;
+  verified: boolean;
+  foundingMember: boolean;
+  paused: boolean;
+  showMe: string[];
+  lastSeenAt: string | null;
+  createdAt: string | null;
+  photos: { id: string; url: string; position: number }[];
+  userPrompts: { id: string; answer: string; position: number; prompt: { id: string; text: string } }[];
+};
 
 export default async function DiscoverPage() {
   const me = await getSessionUser();
@@ -17,7 +32,7 @@ export default async function DiscoverPage() {
 
   const wantGenders = gendersIWant(me.orientation as any, me.gender as any, me.showMe as any);
 
-  let candidates: any[] = [];
+  let candidates: Candidate[] = [];
   let dbError = false;
   const admin = supabaseAdmin();
 
@@ -25,7 +40,6 @@ export default async function DiscoverPage() {
     dbError = true;
   } else {
     try {
-      // Blocks both directions
       const { data: blocks } = await admin
         .from("Block")
         .select("fromUserId,toUserId")
@@ -37,11 +51,13 @@ export default async function DiscoverPage() {
       });
       blockIds.delete(me.id);
 
-      // Candidates with at least one photo + one prompt are filtered client-side
-      // since PostgREST's nested relation filtering is limited.
       let q = admin
         .from("User")
-        .select("id,name,age,gender,verified,foundingMember,lastSeenAt,createdAt,paused,showMe, photos:Photo(id,url,position), userPrompts:UserPrompt(id,answer,position,prompt:Prompt(text))")
+        .select(
+          "id,name,age,gender,orientation,bio,verified,foundingMember,paused,showMe,lastSeenAt,createdAt," +
+          "photos:Photo(id,url,position)," +
+          "userPrompts:UserPrompt(id,answer,position,prompt:Prompt(id,text))"
+        )
         .neq("id", me.id)
         .eq("paused", false)
         .in("gender", wantGenders as any)
@@ -54,20 +70,20 @@ export default async function DiscoverPage() {
       const { data, error } = await q.limit(40);
       if (error) throw error;
 
-      candidates = (data ?? [])
-        .filter((u: any) => (u.photos ?? []).length > 0 && (u.userPrompts ?? []).length > 0)
-        .sort((a: any, b: any) => {
+      candidates = ((data ?? []) as any[])
+        .filter((u) => (u.photos ?? []).length > 0 && (u.userPrompts ?? []).length > 0)
+        .map((u) => ({
+          ...u,
+          photos: [...(u.photos ?? [])].sort((a: any, b: any) => a.position - b.position),
+          userPrompts: [...(u.userPrompts ?? [])].sort((a: any, b: any) => a.position - b.position)
+        }))
+        .sort((a, b) => {
           if (a.foundingMember !== b.foundingMember) return a.foundingMember ? -1 : 1;
           const at = a.lastSeenAt ? new Date(a.lastSeenAt).getTime() : 0;
           const bt = b.lastSeenAt ? new Date(b.lastSeenAt).getTime() : 0;
           return bt - at;
         })
-        .slice(0, 24)
-        .map((u: any) => ({
-          ...u,
-          photos: [...(u.photos ?? [])].sort((x, y) => x.position - y.position),
-          userPrompts: [...(u.userPrompts ?? [])].sort((x, y) => x.position - y.position)
-        }));
+        .slice(0, 12);
     } catch (e) {
       console.error("discover query failed:", e);
       dbError = true;
@@ -76,45 +92,29 @@ export default async function DiscoverPage() {
 
   return (
     <AppShell>
-      <div className="mx-auto max-w-3xl px-6 lg:px-10 pt-10 pb-24">
-        <p className="eyebrow">People you vibe with</p>
-        <h1 className="display text-5xl mt-3">For you, this week.</h1>
+      <div className="mx-auto max-w-md md:max-w-2xl px-4 sm:px-6 pt-6 pb-28">
+        <header className="flex items-baseline justify-between mb-6">
+          <h1 className="font-extrabold text-2xl tracking-[-0.04em]">Discover</h1>
+          <span className="text-xs text-muted">{candidates.length} {candidates.length === 1 ? "person" : "people"}</span>
+        </header>
 
         {dbError ? (
-          <div className="mt-14 card-line p-10">
-            <p className="display text-2xl">Couldn't load profiles.</p>
-            <p className="mt-3 text-muted text-sm">Refresh in a moment.</p>
+          <div className="card-line p-6">
+            <p className="font-semibold text-lg">Couldn't load profiles.</p>
+            <p className="mt-2 text-muted text-sm">Try refreshing in a moment.</p>
           </div>
         ) : candidates.length === 0 ? (
-          <div className="mt-14 card-line p-10">
-            <p className="display text-2xl">No fresh faces today.</p>
-            <p className="mt-3 text-muted text-sm">Come back tomorrow — we shuffle the deck daily.</p>
+          <div className="card-line p-6">
+            <p className="font-semibold text-lg">No fresh faces today.</p>
+            <p className="mt-2 text-muted text-sm">Come back tomorrow — we shuffle the deck daily.</p>
           </div>
         ) : (
-          <ul className="mt-12 space-y-12">
-            {candidates.map((c) => {
-              const photo = c.photos[0];
-              const up = c.userPrompts[0];
-              return (
-                <li key={c.id} className="space-y-5">
-                  <header className="flex items-baseline justify-between gap-4">
-                    <Link href={`/profile/${c.id}`}>
-                      <h2 className="display text-3xl">{c.name ?? "—"}</h2>
-                    </Link>
-                    <div className="flex items-center gap-2">
-                      {c.verified && <Badge>Verified</Badge>}
-                      {c.foundingMember && <Badge>Founding</Badge>}
-                      {c.age && <span className="text-sm text-muted">{c.age}</span>}
-                    </div>
-                  </header>
-                  {photo && <PhotoCard url={photo.url} alt={c.name ?? ""} />}
-                  {up && <PromptBlock question={up.prompt.text} answer={up.answer} />}
-                  <div className="pt-3">
-                    <Link href={`/profile/${c.id}`} className="btn-line">Open profile</Link>
-                  </div>
-                </li>
-              );
-            })}
+          <ul className="space-y-12">
+            {candidates.map((c) => (
+              <li key={c.id}>
+                <ProfileCard candidate={c} />
+              </li>
+            ))}
           </ul>
         )}
       </div>

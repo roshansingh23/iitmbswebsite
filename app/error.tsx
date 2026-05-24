@@ -15,8 +15,7 @@ export default function RouteError({
         <p className="eyebrow">Something broke</p>
         <h1 className="display text-5xl mt-3">Try again.</h1>
         <p className="mt-5 text-muted leading-relaxed">
-          We hit a snag rendering this page. Common cause is a missing env var
-          on the server — check <code>/api/_diag</code>.
+          We hit a snag rendering this page.
         </p>
         {error?.digest && (
           <p className="mt-4 font-mono text-xs text-muted">digest: {error.digest}</p>
