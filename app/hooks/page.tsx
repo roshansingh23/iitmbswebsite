@@ -52,9 +52,7 @@ export default async function HooksPage() {
 
   return (
     <AppShell>
-      <div className="px-4 pt-6 pb-12">
-        <h1 className="font-extrabold text-2xl tracking-[-0.04em]">Hooks</h1>
-
+      <div className="px-4 pt-4 pb-12">
         {dbError && (
           <div className="card-line p-5 mt-6">
             <p className="font-semibold">Couldn't load hooks.</p>
@@ -62,7 +60,7 @@ export default async function HooksPage() {
           </div>
         )}
 
-        <section className="mt-8">
+        <section className="mt-2">
           <header className="flex items-baseline justify-between mb-3">
             <h2 className="font-semibold text-lg">Hooked you</h2>
             <span className="text-xs text-muted">{incoming.length}</span>
@@ -100,7 +98,7 @@ export default async function HooksPage() {
 
         <section className="mt-10">
           <header className="flex items-baseline justify-between mb-3">
-            <h2 className="font-semibold text-lg">Lines out</h2>
+            <h2 className="font-semibold text-lg">Sent</h2>
             <span className="text-xs text-muted">{outgoing.length}</span>
           </header>
           {outgoing.length === 0 ? (
