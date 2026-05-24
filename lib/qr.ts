@@ -10,7 +10,7 @@ export async function renderQrSvg(payload: string) {
   return QRCode.toString(payload, {
     type: "svg",
     margin: 1,
-    color: { dark: "#1C1B19", light: "#F3F0E9" },
+    color: { dark: "#1C1B19", light: "#FFFFFF" },
     errorCorrectionLevel: "M"
   });
 }
@@ -18,7 +18,7 @@ export async function renderQrSvg(payload: string) {
 export async function renderQrPng(payload: string) {
   return QRCode.toBuffer(payload, {
     margin: 1,
-    color: { dark: "#1C1B19", light: "#F3F0E9" },
+    color: { dark: "#1C1B19", light: "#FFFFFF" },
     width: 800
   });
 }

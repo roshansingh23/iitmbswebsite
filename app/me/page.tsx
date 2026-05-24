@@ -104,7 +104,7 @@ export default async function MePage() {
                 alt="Your QR"
                 width={140}
                 height={140}
-                className="rounded-[10px] border border-hairline"
+                className="rounded-[10px]"
               />
               <p className="text-xs text-muted font-mono break-all pt-1">{me.qrCode}</p>
             </div>
