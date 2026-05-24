@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { getSessionUser } from "@/lib/session";
+import { supabaseAdmin } from "@/lib/supabase-server";
 import { AppShell } from "@/components/app-shell";
 import { PhotoCard } from "@/components/photo-card";
 import { PromptBlock } from "@/components/prompt-block";
@@ -14,7 +15,27 @@ export default async function MePage() {
   const me = await getSessionUser();
   if (!me) redirect("/login");
 
-  const needsOnboarding = !me.gender || !me.orientation || me.showMe.length === 0 || me.photos.length === 0;
+  let photos: { id: string; url: string }[] = [];
+  let userPrompts: { id: string; answer: string; prompt: { text: string } }[] = [];
+  const admin = supabaseAdmin();
+  if (admin) {
+    const { data: ph } = await admin
+      .from("Photo")
+      .select("id,url,position")
+      .eq("userId", me.id)
+      .order("position", { ascending: true });
+    photos = (ph ?? []) as any;
+
+    const { data: up } = await admin
+      .from("UserPrompt")
+      .select("id,answer,position,prompt:Prompt(text)")
+      .eq("userId", me.id)
+      .order("position", { ascending: true });
+    userPrompts = (up ?? []) as any;
+  }
+
+  const needsOnboarding =
+    !me.gender || !me.orientation || me.showMe.length === 0 || photos.length === 0;
 
   return (
     <AppShell>
@@ -62,17 +83,17 @@ export default async function MePage() {
           )}
         </section>
 
-        {me.photos.length > 0 && (
+        {photos.length > 0 && (
           <section className="mt-12 grid grid-cols-2 gap-4">
-            {me.photos.map((p) => (
+            {photos.map((p) => (
               <PhotoCard key={p.id} url={p.url} alt="" />
             ))}
           </section>
         )}
 
-        {me.userPrompts.length > 0 && (
+        {userPrompts.length > 0 && (
           <section className="mt-10 space-y-4">
-            {me.userPrompts.map((up) => (
+            {userPrompts.map((up: any) => (
               <PromptBlock key={up.id} question={up.prompt.text} answer={up.answer} />
             ))}
           </section>

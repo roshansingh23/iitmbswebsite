@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { getSessionUser } from "@/lib/session";
-import { db } from "@/lib/db";
+import { supabaseAdmin } from "@/lib/supabase-server";
 import { gendersIWant } from "@/lib/matching";
 import { AppShell } from "@/components/app-shell";
 import { PromptBlock } from "@/components/prompt-block";
@@ -15,45 +15,63 @@ export default async function DiscoverPage() {
   if (!me) redirect("/login");
   if (!me.gender || !me.orientation || me.showMe.length === 0) redirect("/onboarding");
 
-  const wantGenders = gendersIWant(me.orientation, me.gender, me.showMe);
+  const wantGenders = gendersIWant(me.orientation as any, me.gender as any, me.showMe as any);
 
-  // DB-driven filtering — wrap so a broken connection doesn't 500 the page.
   let candidates: any[] = [];
   let dbError = false;
-  try {
-    const blocked = await db.block.findMany({
-      where: { OR: [{ fromUserId: me.id }, { toUserId: me.id }] },
-      select: { fromUserId: true, toUserId: true }
-    });
-    const blockIds = new Set([
-      ...blocked.map((b) => b.fromUserId),
-      ...blocked.map((b) => b.toUserId)
-    ]);
-    blockIds.delete(me.id);
+  const admin = supabaseAdmin();
 
-    candidates = await db.user.findMany({
-      where: {
-        id: { not: me.id, notIn: Array.from(blockIds) },
-        paused: false,
-        gender: { in: wantGenders },
-        showMe: { has: me.gender },
-        photos: { some: {} },
-        userPrompts: { some: {} }
-      },
-      include: {
-        photos: { orderBy: { position: "asc" }, take: 1 },
-        userPrompts: { include: { prompt: true }, orderBy: { position: "asc" }, take: 1 }
-      },
-      orderBy: [
-        { foundingMember: "desc" },
-        { lastSeenAt: "desc" },
-        { createdAt: "desc" }
-      ],
-      take: 24
-    });
-  } catch (e) {
-    console.error("discover query failed:", e);
+  if (!admin) {
     dbError = true;
+  } else {
+    try {
+      // Blocks both directions
+      const { data: blocks } = await admin
+        .from("Block")
+        .select("fromUserId,toUserId")
+        .or(`fromUserId.eq.${me.id},toUserId.eq.${me.id}`);
+      const blockIds = new Set<string>();
+      (blocks ?? []).forEach((b: any) => {
+        blockIds.add(b.fromUserId);
+        blockIds.add(b.toUserId);
+      });
+      blockIds.delete(me.id);
+
+      // Candidates with at least one photo + one prompt are filtered client-side
+      // since PostgREST's nested relation filtering is limited.
+      let q = admin
+        .from("User")
+        .select("id,name,age,gender,verified,foundingMember,lastSeenAt,createdAt,paused,showMe, photos:Photo(id,url,position), userPrompts:UserPrompt(id,answer,position,prompt:Prompt(text))")
+        .neq("id", me.id)
+        .eq("paused", false)
+        .in("gender", wantGenders as any)
+        .contains("showMe", [me.gender]);
+
+      if (blockIds.size > 0) {
+        q = q.not("id", "in", `(${Array.from(blockIds).join(",")})`);
+      }
+
+      const { data, error } = await q.limit(40);
+      if (error) throw error;
+
+      candidates = (data ?? [])
+        .filter((u: any) => (u.photos ?? []).length > 0 && (u.userPrompts ?? []).length > 0)
+        .sort((a: any, b: any) => {
+          if (a.foundingMember !== b.foundingMember) return a.foundingMember ? -1 : 1;
+          const at = a.lastSeenAt ? new Date(a.lastSeenAt).getTime() : 0;
+          const bt = b.lastSeenAt ? new Date(b.lastSeenAt).getTime() : 0;
+          return bt - at;
+        })
+        .slice(0, 24)
+        .map((u: any) => ({
+          ...u,
+          photos: [...(u.photos ?? [])].sort((x, y) => x.position - y.position),
+          userPrompts: [...(u.userPrompts ?? [])].sort((x, y) => x.position - y.position)
+        }));
+    } catch (e) {
+      console.error("discover query failed:", e);
+      dbError = true;
+    }
   }
 
   return (
@@ -65,10 +83,7 @@ export default async function DiscoverPage() {
         {dbError ? (
           <div className="mt-14 card-line p-10">
             <p className="display text-2xl">Couldn't load profiles.</p>
-            <p className="mt-3 text-muted text-sm">
-              Refresh in a moment. If it keeps failing, the deployment's database
-              connection is misconfigured.
-            </p>
+            <p className="mt-3 text-muted text-sm">Refresh in a moment.</p>
           </div>
         ) : candidates.length === 0 ? (
           <div className="mt-14 card-line p-10">

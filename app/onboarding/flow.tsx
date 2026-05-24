@@ -5,7 +5,9 @@ import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input, Label, Textarea } from "@/components/ui/input";
 import { PhotoUploader } from "@/components/photo-uploader";
-import type { Gender, Orientation } from "@prisma/client";
+
+type Gender = "man" | "woman" | "nonbinary" | "other";
+type Orientation = "straight" | "gay" | "lesbian" | "bisexual" | "pansexual" | "asexual" | "other";
 
 type Initial = {
   name: string;

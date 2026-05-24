@@ -1,10 +1,9 @@
 import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
-import { createClient } from "@supabase/supabase-js";
+import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 
-// Cookie-aware Supabase client for server components, route handlers, and
-// server actions. Uses the @supabase/ssr v0.10+ getAll/setAll API so the
-// session cookies set during OAuth callback actually persist on the response.
+// Cookie-aware client for the signed-in user's context. Uses the anon key
+// and respects RLS — never use this for elevated writes.
 export function supabaseServer() {
   const cookieStore = cookies();
   return createServerClient(
@@ -21,8 +20,8 @@ export function supabaseServer() {
               cookieStore.set(name, value, options);
             });
           } catch {
-            // Server Components can't mutate cookies — ignore silently. The
-            // middleware refreshes the session on the next request anyway.
+            // Server Component context — mutations not allowed. Safe to swallow;
+            // middleware refreshes the session on the next request.
           }
         }
       }
@@ -30,8 +29,22 @@ export function supabaseServer() {
   );
 }
 
-// Broadcast helper for chat / realtime. No cookie awareness needed.
-let _broadcaster: ReturnType<typeof createClient> | null = null;
+// Service-role client. Bypasses RLS. Uses Supabase's JWT auth — no Postgres
+// password required. Lives ONLY on the server (never imported by client code).
+let _admin: SupabaseClient | null = null;
+export function supabaseAdmin(): SupabaseClient | null {
+  if (_admin) return _admin;
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  if (!url || !key) return null;
+  _admin = createClient(url, key, {
+    auth: { persistSession: false, autoRefreshToken: false }
+  });
+  return _admin;
+}
+
+// Realtime broadcast for chat. No cookies needed.
+let _broadcaster: SupabaseClient | null = null;
 export async function supabaseBroadcast(channelName: string, event: string, payload: unknown) {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;

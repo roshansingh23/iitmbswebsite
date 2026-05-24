@@ -1,8 +1,7 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { db } from "@/lib/db";
 import { requireUser } from "@/lib/session";
-import type { Gender, Orientation } from "@prisma/client";
+import { supabaseAdmin } from "@/lib/supabase-server";
 
 export const runtime = "nodejs";
 
@@ -17,9 +16,21 @@ const schema = z.object({
   answers: z.array(z.object({ promptId: z.string(), answer: z.string().min(1).max(280) })).max(6)
 });
 
+function cuid(prefix = "c") {
+  return prefix + Math.random().toString(36).slice(2, 14) + Math.random().toString(36).slice(2, 14);
+}
+
 export async function POST(req: Request) {
   const user = await requireUser().catch(() => null);
   if (!user) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
+
+  const admin = supabaseAdmin();
+  if (!admin) {
+    return NextResponse.json(
+      { error: "Server not configured (SUPABASE_SERVICE_ROLE_KEY missing)." },
+      { status: 503 }
+    );
+  }
 
   const json = await req.json();
   const parsed = schema.safeParse(json);
@@ -28,40 +39,56 @@ export async function POST(req: Request) {
   }
   const { name, age, bio, gender, orientation, showMe, photos, answers } = parsed.data;
 
-  await db.$transaction(async (tx) => {
-    await tx.user.update({
-      where: { id: user.id },
-      data: {
-        name, age, bio,
-        gender: (gender ?? undefined) as Gender | undefined,
-        orientation: (orientation ?? undefined) as Orientation | undefined,
-        showMe: showMe as Gender[]
-      }
-    });
+  // 1) Update profile basics.
+  const { error: updateErr } = await admin
+    .from("User")
+    .update({
+      name,
+      age,
+      bio,
+      gender,
+      orientation,
+      showMe
+    })
+    .eq("id", user.id);
+  if (updateErr) {
+    return NextResponse.json({ error: updateErr.message }, { status: 500 });
+  }
 
-    if (photos.length > 0) {
-      await tx.photo.deleteMany({ where: { userId: user.id } });
-      await tx.photo.createMany({
-        data: photos.map((p, i) => ({
-          userId: user.id, url: p.url, publicId: p.publicId, position: i
-        }))
-      });
-    }
+  // 2) Photos — replace.
+  await admin.from("Photo").delete().eq("userId", user.id);
+  if (photos.length > 0) {
+    const rows = photos.map((p, i) => ({
+      id: cuid(),
+      userId: user.id,
+      url: p.url,
+      publicId: p.publicId,
+      position: i,
+      createdAt: new Date().toISOString()
+    }));
+    const { error: photoErr } = await admin.from("Photo").insert(rows);
+    if (photoErr) return NextResponse.json({ error: photoErr.message }, { status: 500 });
+  }
 
-    if (answers.length > 0) {
-      await tx.userPrompt.deleteMany({ where: { userId: user.id } });
-      // Filter out empty promptIds defensively.
-      const rows = answers.filter((a) => a.promptId).map((a, i) => ({
-        userId: user.id, promptId: a.promptId, answer: a.answer, position: i
-      }));
-      // Skip duplicates (same promptId twice) by reducing.
-      const seen = new Set<string>();
-      const unique = rows.filter((r) => !seen.has(r.promptId) && (seen.add(r.promptId) || true));
-      for (const r of unique) {
-        await tx.userPrompt.create({ data: r });
-      }
-    }
+  // 3) Prompt answers — dedupe + replace.
+  await admin.from("UserPrompt").delete().eq("userId", user.id);
+  const dedup = new Map<string, string>();
+  answers.forEach((a) => {
+    if (a.promptId && !dedup.has(a.promptId)) dedup.set(a.promptId, a.answer);
   });
+  if (dedup.size > 0) {
+    let i = 0;
+    const rows = Array.from(dedup, ([promptId, answer]) => ({
+      id: cuid(),
+      userId: user.id,
+      promptId,
+      answer,
+      position: i++,
+      createdAt: new Date().toISOString()
+    }));
+    const { error: upErr } = await admin.from("UserPrompt").insert(rows);
+    if (upErr) return NextResponse.json({ error: upErr.message }, { status: 500 });
+  }
 
   return NextResponse.json({ ok: true });
 }
