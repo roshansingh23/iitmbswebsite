@@ -63,9 +63,9 @@ export function ScrollNav() {
         }
       >
         <div className="mx-auto max-w-7xl px-6 lg:px-10 h-20 flex items-center md:grid md:grid-cols-3">
-          {/* Mobile: hamburger + brand inline on the left. Desktop: "How
-              it works" link on the left, brand centered. */}
-          <div className="flex items-center gap-2 md:justify-self-start">
+          {/* Mobile: hamburger + brand inline on the left. Desktop:
+              Language + Voices links on the left, brand centered. */}
+          <div className="flex items-center gap-2 md:gap-5 md:justify-self-start">
             <button
               type="button"
               onClick={() => setMenuOpen(true)}
@@ -81,10 +81,16 @@ export function ScrollNav() {
               Mismatched.
             </Link>
             <Link
-              href="#how"
+              href="/language"
               className="hidden md:inline text-sm font-medium hover:opacity-70 transition-opacity"
             >
-              How it works
+              Language
+            </Link>
+            <Link
+              href="/voices"
+              className="hidden md:inline text-sm font-medium hover:opacity-70 transition-opacity"
+            >
+              Voices
             </Link>
           </div>
 
@@ -143,9 +149,6 @@ export function ScrollNav() {
           </div>
 
           <nav className="px-6 pt-10 flex flex-col gap-7">
-            <DrawerLink href="#how" onClick={() => setMenuOpen(false)}>
-              How it works
-            </DrawerLink>
             <DrawerLink href="/language" onClick={() => setMenuOpen(false)}>
               Language
             </DrawerLink>
