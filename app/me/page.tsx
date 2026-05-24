@@ -8,6 +8,8 @@ import { PromptBlock } from "@/components/prompt-block";
 import { Badge } from "@/components/ui/badge";
 import { SignOutButton } from "./signout";
 import { PauseToggle } from "./pause";
+import { AddPromptButton } from "@/components/add-prompt-button";
+import { ScanQrButton } from "@/components/scan-qr-button";
 
 export const dynamic = "force-dynamic";
 
@@ -16,23 +18,21 @@ export default async function MePage() {
   if (!me) redirect("/login");
 
   let photos: Photo[] = [];
-  let userPrompts: { id: string; answer: string; prompt: { text: string } }[] = [];
+  let userPrompts: { id: string; answer: string; promptId: string; prompt: { text: string } }[] = [];
+  let promptBank: { id: string; text: string }[] = [];
   const admin = supabaseAdmin();
   if (admin) {
-    const { data: ph } = await admin
-      .from("Photo")
-      .select("id,url,publicId,position")
-      .eq("userId", me.id)
-      .order("position", { ascending: true });
-    photos = (ph ?? []) as any;
-
-    const { data: up } = await admin
-      .from("UserPrompt")
-      .select("id,answer,position,prompt:Prompt(text)")
-      .eq("userId", me.id)
-      .order("position", { ascending: true });
-    userPrompts = (up ?? []) as any;
+    const [phResp, upResp, bankResp] = await Promise.all([
+      admin.from("Photo").select("id,url,publicId,position").eq("userId", me.id).order("position", { ascending: true }),
+      admin.from("UserPrompt").select("id,answer,position,promptId,prompt:Prompt(text)").eq("userId", me.id).order("position", { ascending: true }),
+      admin.from("Prompt").select("id,text").eq("active", true).order("text", { ascending: true })
+    ]);
+    photos = (phResp.data ?? []) as any;
+    userPrompts = (upResp.data ?? []) as any;
+    promptBank = (bankResp.data ?? []) as any;
   }
+
+  const usedPromptIds = userPrompts.map((u) => u.promptId);
 
   const needsOnboarding =
     !me.gender || !me.orientation || me.showMe.length === 0 || photos.length === 0;
@@ -67,12 +67,17 @@ export default async function MePage() {
           <PhotoManager initialPhotos={photos} />
         </section>
 
-        {userPrompts.length > 0 && (
-          <section className="mt-10">
-            <header className="flex items-baseline justify-between mb-4">
-              <h2 className="font-semibold text-lg">Answers</h2>
-              <Link href="/onboarding" className="text-xs underline text-muted">Edit</Link>
-            </header>
+        <section className="mt-10">
+          <header className="flex items-baseline justify-between mb-4">
+            <h2 className="font-semibold text-lg">Answers</h2>
+            <AddPromptButton bank={promptBank} alreadyUsed={usedPromptIds} />
+          </header>
+          {userPrompts.length === 0 ? (
+            <div className="card-line p-5">
+              <p className="font-semibold">No answers yet.</p>
+              <p className="mt-1 text-muted text-sm">Pick a prompt and write something.</p>
+            </div>
+          ) : (
             <ul className="space-y-3">
               {userPrompts.map((up: any) => (
                 <li key={up.id}>
@@ -80,13 +85,16 @@ export default async function MePage() {
                 </li>
               ))}
             </ul>
-          </section>
-        )}
+          )}
+        </section>
 
         <section className="mt-10 card-line p-5">
-          <h2 className="font-semibold text-lg">Your QR</h2>
-          <p className="mt-1 text-sm text-muted">
-            Show in person — scanning opens your profile and connects instantly.
+          <div className="flex items-center justify-between gap-3">
+            <h2 className="font-semibold text-lg">Your QR</h2>
+            <ScanQrButton />
+          </div>
+          <p className="mt-2 text-sm text-muted">
+            Show yours in person, or scan someone else's to open their profile.
           </p>
           {me.qrCode ? (
             <div className="mt-4 flex items-start gap-4">

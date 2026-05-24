@@ -222,8 +222,10 @@ model Match {
 
 model Conversation {
   id                 String    @id @default(cuid())
-  matchId            String    @unique
-  match              Match     @relation(fields: [matchId], references: [id], onDelete: Cascade)
+  // Nullable now — a Conversation is created the moment one user hooks
+  // another (one-way), and gets linked to a Match later if mutual.
+  matchId            String?   @unique
+  match              Match?    @relation(fields: [matchId], references: [id], onDelete: SetNull)
   userAId            String
   userA              User      @relation("ConvA", fields: [userAId], references: [id], onDelete: Cascade)
   userBId            String
