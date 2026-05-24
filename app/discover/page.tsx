@@ -63,77 +63,96 @@ export default async function DiscoverPage() {
           .gte("lastShownAt", recentImpressionCutoff)
       ]);
 
-      const excludeIds = new Set<string>();
-      (blocks ?? []).forEach((b: any) => { excludeIds.add(b.fromUserId); excludeIds.add(b.toUserId); });
-      (myHooks ?? []).forEach((h: any) => excludeIds.add(h.toUserId));
-      // 24h impression window: profiles shown to me in the last day stay out
-      // of the deck so reloads keep feeling fresh.
-      (myImpressions ?? []).forEach((i: any) => excludeIds.add(i.candidateId));
-      excludeIds.delete(me.id);
+      const db = admin;
 
-      // Recent passes (last 7d) are also excluded from the SQL pool. Older
-      // passes can re-enter but get a soft decay penalty from the
-      // recommender.
+      // Hard excludes — never resurface: blocks, my hooks, recent passes.
+      const hardExclude = new Set<string>();
+      (blocks ?? []).forEach((b: any) => { hardExclude.add(b.fromUserId); hardExclude.add(b.toUserId); });
+      (myHooks ?? []).forEach((h: any) => hardExclude.add(h.toUserId));
+
       const PASS_WINDOW_MS = 7 * 24 * 60 * 60 * 1000;
       const passedAt = new Map<string, string>();
-      const recentPasses = new Set<string>();
       (myPasses ?? []).forEach((p: any) => {
         passedAt.set(p.toUserId, p.createdAt);
         if (Date.now() - new Date(p.createdAt).getTime() < PASS_WINDOW_MS) {
-          recentPasses.add(p.toUserId);
+          hardExclude.add(p.toUserId);
         }
       });
-      recentPasses.forEach((id) => excludeIds.add(id));
+      hardExclude.delete(me.id);
 
-      // Mutual visibility: candidate.gender ∈ my showMe AND my gender ∈
-      // candidate.showMe. Empty-showMe rows filtered out by the not-null
-      // check.
-      let q = admin
-        .from("User")
-        .select(
-          "id,name,age,gender,orientation,bio,height,location,intentions," +
-          "\"relationshipType\",verified,foundingMember,paused,showMe,lastSeenAt,createdAt," +
-          "photos:Photo(id,url,position)," +
-          "userPrompts:UserPrompt(id,answer,position,prompt:Prompt(id,text))"
-        )
-        .neq("id", me.id)
-        .eq("paused", false)
-        .not("showMe", "is", null)
-        .in("gender", wantGenders as any)
-        .contains("showMe", [me.gender])
-        .gte("age", me.filterAgeMin ?? 18)
-        .lte("age", me.filterAgeMax ?? 99);
+      // Soft exclude — profiles seen in the last 24h. Keeps the deck fresh
+      // when the pool is healthy, but is DROPPED when that would leave the
+      // deck empty (small pool / heavy swiper) so we never dead-end.
+      const impressionIds = new Set<string>();
+      (myImpressions ?? []).forEach((i: any) => { if (i.candidateId !== me.id) impressionIds.add(i.candidateId); });
 
-      if (me.filterIntentions) q = q.eq("intentions", me.filterIntentions);
-      if (me.filterActiveToday) {
-        const dayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
-        q = q.gte("lastSeenAt", dayAgo);
+      // Snapshot fields — `me` re-widens to nullable inside the closure.
+      const meId = me.id;
+      const meGender = me.gender;
+      const fAgeMin = me.filterAgeMin ?? 18;
+      const fAgeMax = me.filterAgeMax ?? 99;
+      const fIntentions = me.filterIntentions;
+      const fActiveToday = me.filterActiveToday;
+      const fNewHere = me.filterNewHere;
+
+      async function fetchPool(exclude: Set<string>): Promise<Candidate[]> {
+        // Mutual visibility: candidate.gender ∈ my showMe AND my gender ∈
+        // candidate.showMe. Empty-showMe rows filtered by the not-null check.
+        let q = db
+          .from("User")
+          .select(
+            "id,name,age,gender,orientation,bio,height,location,intentions," +
+            "\"relationshipType\",verified,foundingMember,paused,showMe,lastSeenAt,createdAt," +
+            "photos:Photo(id,url,position)," +
+            "userPrompts:UserPrompt(id,answer,position,prompt:Prompt(id,text))"
+          )
+          .neq("id", meId)
+          .eq("paused", false)
+          .not("showMe", "is", null)
+          .in("gender", wantGenders as any)
+          .contains("showMe", [meGender])
+          .gte("age", fAgeMin)
+          .lte("age", fAgeMax);
+
+        if (fIntentions) q = q.eq("intentions", fIntentions);
+        if (fActiveToday) {
+          const dayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+          q = q.gte("lastSeenAt", dayAgo);
+        }
+        if (fNewHere) {
+          const weekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
+          q = q.gte("createdAt", weekAgo);
+        }
+        if (exclude.size > 0) {
+          q = q.not("id", "in", `(${Array.from(exclude).join(",")})`);
+        }
+
+        const { data, error } = await q.limit(80);
+        if (error) throw error;
+
+        return ((data ?? []) as any[])
+          .filter((u) => (u.photos ?? []).length > 0 && (u.userPrompts ?? []).length > 0)
+          .map((u): Candidate => {
+            const photos = [...(u.photos ?? [])].sort((a: any, b: any) => a.position - b.position).slice(0, 5);
+            const userPrompts = [...(u.userPrompts ?? [])].sort((a: any, b: any) => a.position - b.position);
+            return {
+              ...u,
+              photos,
+              userPrompts,
+              photoCount: photos.length,
+              promptCount: userPrompts.length
+            };
+          });
       }
-      if (me.filterNewHere) {
-        const weekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
-        q = q.gte("createdAt", weekAgo);
-      }
-      if (excludeIds.size > 0) {
-        q = q.not("id", "in", `(${Array.from(excludeIds).join(",")})`);
-      }
 
-      const { data, error } = await q.limit(80);
-      if (error) throw error;
-
-      // Cap each profile to 5 photos rendered.
-      const pool = ((data ?? []) as any[])
-        .filter((u) => (u.photos ?? []).length > 0 && (u.userPrompts ?? []).length > 0)
-        .map((u): Candidate => {
-          const photos = [...(u.photos ?? [])].sort((a: any, b: any) => a.position - b.position).slice(0, 5);
-          const userPrompts = [...(u.userPrompts ?? [])].sort((a: any, b: any) => a.position - b.position);
-          return {
-            ...u,
-            photos,
-            userPrompts,
-            photoCount: photos.length,
-            promptCount: userPrompts.length
-          };
-        });
+      // First pass: hide everything seen in the last 24h. If that empties
+      // the deck, retry showing previously-seen (but never passed/hooked/
+      // blocked) profiles so heavy swipers on a small pool aren't stranded.
+      const fullExclude = new Set<string>([...hardExclude, ...impressionIds]);
+      let pool = await fetchPool(fullExclude);
+      if (pool.length === 0 && impressionIds.size > 0) {
+        pool = await fetchPool(hardExclude);
+      }
 
       const meInput: Me = {
         id: me.id,
