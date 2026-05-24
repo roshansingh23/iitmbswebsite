@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Inter } from "next/font/google";
+import { Inter, Newsreader } from "next/font/google";
 import "./globals.css";
 
 const inter = Inter({
@@ -7,6 +7,16 @@ const inter = Inter({
   variable: "--font-sans",
   display: "swap",
   weight: ["300", "400", "500", "600", "700", "800", "900"]
+});
+
+// Transitional serif used only where editorial weight is needed — namely the
+// big statement section on the landing page. Rest of the site stays in Inter.
+const newsreader = Newsreader({
+  subsets: ["latin"],
+  variable: "--font-display-serif",
+  display: "swap",
+  weight: ["400", "500"],
+  style: ["normal", "italic"]
 });
 
 export const metadata: Metadata = {
@@ -18,7 +28,7 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" className={inter.variable}>
+    <html lang="en" className={`${inter.variable} ${newsreader.variable}`}>
       <body className="min-h-screen bg-bone text-ink antialiased">{children}</body>
     </html>
   );

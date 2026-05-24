@@ -79,7 +79,7 @@ function Statement() {
   return (
     <section className="bg-white">
       <div className="mx-auto max-w-7xl px-6 lg:px-10 py-24 md:py-36">
-        <div className="max-w-5xl">
+        <div className="max-w-3xl">
           <p
             style={{
               fontSize: "0.85rem",
@@ -91,22 +91,32 @@ function Statement() {
           >
             Our approach
           </p>
-          <h2 className="mt-10 display text-[3.5rem] sm:text-[5rem] md:text-[7rem] lg:text-[8.5rem]">
-            Date{" "}
+          <h2
+            style={{
+              fontFamily: "var(--font-display-serif), Georgia, serif",
+              fontWeight: 400,
+              letterSpacing: "-0.015em",
+              lineHeight: 1.04
+            }}
+            className="mt-10 text-[3rem] sm:text-[4.5rem] md:text-[6rem] lg:text-[7rem]"
+          >
+            Stay{" "}
             <span className="inline-block relative">
-              <span className="display-italic font-medium">after</span>
+              long
               <CircleAnnotation />
             </span>{" "}
-            hours.
+            enough <br/> to mean it.
           </h2>
+
           <div className="mt-14">
+            <CurlyArrow className="mb-6" />
             <Link
               href="#how"
               className="inline-flex items-center justify-center gap-2 bg-ink text-white rounded-full font-semibold transition hover:opacity-90"
               style={{
-                padding: "1.25rem 2.5rem",
-                fontSize: "1rem",
-                letterSpacing: "0.06em"
+                padding: "1.1rem 2.25rem",
+                fontSize: "0.95rem",
+                letterSpacing: "0.04em"
               }}
             >
               How we do it
