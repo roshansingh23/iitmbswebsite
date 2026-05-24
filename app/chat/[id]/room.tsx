@@ -88,6 +88,10 @@ export function ChatRoom({
     const channel = sb.channel(`conv:${conversationId}`, { config: { broadcast: { self: false } } });
     channel.on("broadcast", { event: "message" }, (payload) => {
       const m = payload.payload as Msg;
+      // Self-broadcasts (server fan-out arrives back at the sender):
+      // skip them — the POST response already replaced the optimistic
+      // temp with the real row. Without this we double-show on send.
+      if (m.fromUserId === meId) return;
       setMsgs((prev) => (prev.some((p) => p.id === m.id) ? prev : [...prev, m]));
     });
     channel.on("broadcast", { event: "photoView" }, (payload) => {

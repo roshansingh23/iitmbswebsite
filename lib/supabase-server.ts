@@ -43,15 +43,35 @@ export function supabaseAdmin(): SupabaseClient | null {
   return _admin;
 }
 
-// Realtime broadcast for chat. No cookies needed.
-let _broadcaster: SupabaseClient | null = null;
+// Realtime broadcast for chat. Uses the HTTP broadcast endpoint instead
+// of a WebSocket so server-side route handlers don't race with channel
+// subscription. The previous WebSocket version called channel.send()
+// before SUBSCRIBED fired, dropping most messages silently.
 export async function supabaseBroadcast(channelName: string, event: string, payload: unknown) {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+  const key = process.env.SUPABASE_SERVICE_ROLE_KEY ?? process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
   if (!url || !key) return;
-  if (!_broadcaster) _broadcaster = createClient(url, key, { auth: { persistSession: false } });
-  const channel = _broadcaster.channel(channelName);
-  await channel.subscribe();
-  await channel.send({ type: "broadcast", event, payload });
-  setTimeout(() => channel.unsubscribe(), 500);
+
+  try {
+    await fetch(`${url}/realtime/v1/api/broadcast`, {
+      method: "POST",
+      headers: {
+        apikey: key,
+        Authorization: `Bearer ${key}`,
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        messages: [
+          {
+            topic: channelName,
+            event,
+            payload,
+            private: false
+          }
+        ]
+      })
+    });
+  } catch (e) {
+    console.error("broadcast failed:", e);
+  }
 }
