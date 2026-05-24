@@ -39,24 +39,31 @@ export function LoginForm() {
   }
 
   const inlineError = errorParam ? (ERROR_MESSAGES[errorParam] ?? ERROR_MESSAGES.Default) : null;
+  const error = message || inlineError;
 
   return (
     <>
+      {/* Error sits ABOVE the button in a raised white block with black
+          text so an invalid / non-IITM email is impossible to miss. */}
+      {error && (
+        <div
+          className="mt-8 rounded-xl bg-white border border-hairline px-4 py-3"
+          style={{ boxShadow: "0 4px 18px rgba(0,0,0,0.10)" }}
+          role="alert"
+        >
+          <p className="text-sm font-semibold text-ink">{error}</p>
+        </div>
+      )}
+
       <button
         type="button"
         onClick={signInWithGoogle}
         disabled={busy}
-        className="mt-10 w-full inline-flex items-center justify-center gap-3 border border-ink rounded-full px-5 py-3 text-sm font-semibold hover:bg-tint transition disabled:opacity-50"
+        className="mt-6 w-full inline-flex items-center justify-center gap-3 border border-ink rounded-full px-5 py-3 text-sm font-semibold hover:bg-tint transition disabled:opacity-50"
       >
         <GoogleMark />
         {busy ? "Opening Google…" : "Continue with Google"}
       </button>
-
-      {(message || inlineError) && (
-        <p className="mt-6 text-sm text-ink border-l border-ink pl-3">
-          {message || inlineError}
-        </p>
-      )}
     </>
   );
 }
