@@ -48,30 +48,52 @@ const STEP_COUNT = 6;
 
 export function OnboardingFlow({
   initial,
-  promptBank
+  promptBank,
+  initialPhotos = [],
+  initialAnswers = []
 }: {
   initial: Initial;
   promptBank: { id: string; text: string }[];
+  initialPhotos?: { url: string; publicId: string }[];
+  initialAnswers?: { promptId: string; answer: string }[];
 }) {
   const router = useRouter();
   const [step, setStep] = useState(0);
   const [state, setState] = useState<Initial>(initial);
-  const [photos, setPhotos] = useState<{ url: string; publicId: string }[]>([]);
-  const [answers, setAnswers] = useState<{ promptId: string; answer: string }[]>([]);
+  // Seed with the user's existing photos/answers so editing doesn't wipe
+  // them — the API replaces these wholesale, so an empty seed would
+  // delete everything on Finish.
+  const [photos, setPhotos] = useState<{ url: string; publicId: string }[]>(initialPhotos);
+  const [answers, setAnswers] = useState<{ promptId: string; answer: string }[]>(initialAnswers);
   const [saving, setSaving] = useState(false);
+  const [err, setErr] = useState<string | null>(null);
 
   function next() { setStep((s) => Math.min(s + 1, STEP_COUNT - 1)); }
   function back() { setStep((s) => Math.max(s - 1, 0)); }
 
   async function submit() {
+    if (saving) return;
     setSaving(true);
-    const res = await fetch("/api/onboarding", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ ...state, photos, answers })
-    });
-    setSaving(false);
-    if (res.ok) router.push("/discover");
+    setErr(null);
+    try {
+      const res = await fetch("/api/onboarding", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ...state, photos, answers })
+      });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        setErr(data.error ?? "Couldn't save — check your name, photos and answers.");
+        setSaving(false);
+        return;
+      }
+      // Hard navigation so the discover server component re-runs fresh
+      // with the updated profile rather than a cached client view.
+      window.location.href = "/discover";
+    } catch {
+      setErr("Network hiccup. Try again.");
+      setSaving(false);
+    }
   }
 
   return (
@@ -168,6 +190,10 @@ export function OnboardingFlow({
             onChange={(e) => setState((s) => ({ ...s, bio: e.target.value }))}
           />
         </section>
+      )}
+
+      {err && (
+        <p className="text-sm pt-2" style={{ color: "#D43A2F" }}>{err}</p>
       )}
 
       <div className="flex items-center justify-between pt-6 border-t border-hairline">

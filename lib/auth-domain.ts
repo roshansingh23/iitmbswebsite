@@ -1,10 +1,11 @@
 // Silent email-domain gate. Anyone outside the allowlist sees a generic
 // rejection — never reveal which domain qualifies.
 
-// Open for now. To re-enable iitm.ac.in restriction:
-//   - set DEFAULT_DOMAINS back to ["iitm.ac.in"], OR
-//   - set ALLOWED_EMAIL_DOMAINS=iitm.ac.in on Vercel
-const DEFAULT_DOMAINS: string[] = [];
+// Restricted to IITM emails. The subdomain match in isAllowedEmail covers
+// every IITM domain — iitm.ac.in, smail.iitm.ac.in, ds.study.iitm.ac.in,
+// study.iitm.ac.in, etc. Override with ALLOWED_EMAIL_DOMAINS on Vercel if
+// the allowlist needs to change without a redeploy.
+const DEFAULT_DOMAINS: string[] = ["iitm.ac.in"];
 
 function allowlist(): string[] {
   const fromEnv = (process.env.ALLOWED_EMAIL_DOMAINS ?? "").trim();
@@ -22,4 +23,4 @@ export function isAllowedEmail(email: string): boolean {
   return domains.some((d) => domain === d || domain.endsWith("." + d));
 }
 
-export const GENERIC_REJECT_MESSAGE = "This email can't be used to sign up.";
+export const GENERIC_REJECT_MESSAGE = "Only IITM student email allowed.";

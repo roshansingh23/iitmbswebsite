@@ -5,7 +5,7 @@ import { useSearchParams } from "next/navigation";
 import { supabaseBrowser } from "@/lib/supabase-browser";
 
 const ERROR_MESSAGES: Record<string, string> = {
-  AccessDenied: "This email can't be used.",
+  AccessDenied: "Only IITM student email allowed.",
   callback_failed: "Sign-in failed.",
   Default: "Something went wrong."
 };

@@ -52,14 +52,15 @@ export default async function ChatPage({ params }: { params: { id: string } }) {
   // Try the new column set; fall back to the legacy one if the photo
   // migration hasn't been applied yet. Without this fallback, an old DB
   // returns null/error here and the chat loads with zero history.
-  let { data: messages, error: msgErr } = await admin
+  const firstMsgRes = await admin
     .from("Message")
     .select("id,body,fromUserId,createdAt,messageType,photoUrl,viewsRemaining")
     .eq("conversationId", params.id)
     .order("createdAt", { ascending: true })
     .limit(200);
-  if (msgErr) {
-    console.error("messages fetch (with photo cols) failed, falling back:", msgErr.message);
+  let messages: any[] | null = firstMsgRes.data;
+  if (firstMsgRes.error) {
+    console.error("messages fetch (with photo cols) failed, falling back:", firstMsgRes.error.message);
     const fb = await admin
       .from("Message")
       .select("id,body,fromUserId,createdAt")

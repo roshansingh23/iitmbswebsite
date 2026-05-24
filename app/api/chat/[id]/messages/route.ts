@@ -48,10 +48,11 @@ export async function GET(req: Request, { params }: { params: { id: string } }) 
     const { data: anchor } = await admin.from("Message").select("createdAt").eq("id", after).maybeSingle();
     if (anchor) q = q.gt("createdAt", (anchor as any).createdAt);
   }
-  let { data: messages, error: msgErr } = await q;
-  if (msgErr) {
+  const firstRes = await q;
+  let messages: any[] | null = firstRes.data;
+  if (firstRes.error) {
     // Photo columns not in DB yet — re-issue the query with legacy cols.
-    console.error("messages GET with photo cols failed, falling back:", msgErr.message);
+    console.error("messages GET with photo cols failed, falling back:", firstRes.error.message);
     let q2 = admin.from("Message")
       .select("id,body,fromUserId,createdAt")
       .eq("conversationId", params.id)
