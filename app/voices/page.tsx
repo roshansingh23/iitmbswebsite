@@ -98,6 +98,9 @@ export default function VoicesPage() {
         {GROUPS.map((g) => (
           <section key={g.title} className="mt-12">
             <h2 className="font-extrabold text-2xl tracking-[-0.03em]">{g.title}</h2>
+            {g.title === "The stages" && <StagesFlow />}
+            {g.title === "The flags" && <FlagSpectrum />}
+            {g.title === "The disappearing acts" && <ContactMeter />}
             <dl className="mt-5 space-y-3">
               {g.terms.map((t) => (
                 <div key={t.word} className="card-line p-5">
@@ -118,6 +121,73 @@ export default function VoicesPage() {
           <Link href="/login" className="btn-ink inline-flex">Start talking</Link>
         </div>
       </main>
+    </div>
+  );
+}
+
+// ── Diagrams ───────────────────────────────────────────────────────────
+
+// Where a modern fling can travel, from undefined to official.
+function StagesFlow() {
+  const steps = ["Talking stage", "Situationship", "DTR", "Exclusive", "Official"];
+  return (
+    <div className="mt-5 -mx-1 overflow-x-auto no-scrollbar">
+      <div className="flex items-center gap-2 px-1 py-1 w-max">
+        {steps.map((s, i) => (
+          <div key={s} className="flex items-center gap-2">
+            <div
+              className="px-3.5 py-2 rounded-full border text-xs font-semibold whitespace-nowrap"
+              style={{ borderColor: ACCENT, color: ACCENT }}
+            >
+              {s}
+            </div>
+            {i < steps.length - 1 && <span aria-hidden style={{ color: ACCENT }}>→</span>}
+          </div>
+        ))}
+      </div>
+      <p className="mt-2 text-xs text-muted">Most people get stuck somewhere in the middle. The whole point is to keep moving right — or move on.</p>
+    </div>
+  );
+}
+
+// The good / weird / bad spectrum.
+function FlagSpectrum() {
+  return (
+    <div className="mt-5 card-line p-5">
+      <div
+        className="h-3 rounded-full"
+        style={{ background: "linear-gradient(to right, #D43A2F 0%, #C9A227 50%, #3FA45B 100%)" }}
+      />
+      <div className="mt-2 flex justify-between text-xs font-semibold">
+        <span style={{ color: "#D43A2F" }}>Red — run</span>
+        <span style={{ color: "#9A7B1F" }}>Beige — huh?</span>
+        <span style={{ color: "#3FA45B" }}>Green — keep</span>
+      </div>
+    </div>
+  );
+}
+
+// How much contact each disappearing act actually leaves you with.
+function ContactMeter() {
+  const rows = [
+    { label: "Ghosting", level: 3, note: "total silence" },
+    { label: "Orbiting", level: 18, note: "silent, still watching" },
+    { label: "Slow fade", level: 30, note: "less and less" },
+    { label: "Benching", level: 42, note: "kept on the bench" },
+    { label: "Breadcrumbing", level: 58, note: "crumbs to keep you hooked" }
+  ];
+  return (
+    <div className="mt-5 card-line p-5 space-y-3">
+      <p className="text-xs text-muted">How much contact you actually get:</p>
+      {rows.map((r) => (
+        <div key={r.label} className="flex items-center gap-3">
+          <span className="w-24 sm:w-28 text-xs font-semibold shrink-0">{r.label}</span>
+          <div className="flex-1 h-2 rounded-full bg-tint overflow-hidden">
+            <div className="h-full rounded-full" style={{ width: `${r.level}%`, background: ACCENT }} />
+          </div>
+          <span className="hidden sm:block text-[0.7rem] text-muted w-40 shrink-0">{r.note}</span>
+        </div>
+      ))}
     </div>
   );
 }
