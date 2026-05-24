@@ -226,8 +226,8 @@ export function ChatRoom({
 
   return (
     <>
-      <header className="fixed top-0 inset-x-0 z-40 bg-white border-b border-hairline">
-        <div className="mx-auto max-w-md h-14 px-3 flex items-center gap-2">
+      <header className="fixed top-0 inset-x-0 lg:left-[400px] lg:right-0 z-40 bg-white border-b border-hairline">
+        <div className="mx-auto lg:mx-0 max-w-md h-14 px-3 flex items-center gap-2">
           <Link href="/matches" aria-label="Back" className="p-2 -ml-2 text-ink active:scale-95 transition">
             <ArrowLeft size={22} strokeWidth={2} />
           </Link>
@@ -304,10 +304,10 @@ export function ChatRoom({
       </div>
 
       <div
-        className="fixed inset-x-0 z-30 bg-white border-t border-hairline"
+        className="fixed inset-x-0 lg:left-[400px] lg:right-0 lg:!bottom-0 z-30 bg-white border-t border-hairline"
         style={{ bottom: `calc(${NAV_HEIGHT_PX}px + env(safe-area-inset-bottom))` }}
       >
-        <div className="mx-auto max-w-md px-4 py-3">
+        <div className="mx-auto lg:mx-0 max-w-md px-4 py-3">
           {locked ? (
             <div className="flex items-center justify-between gap-3">
               <p className="text-sm leading-snug">This chat is paused. Upgrade to keep talking.</p>

@@ -3,24 +3,38 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Compass, Bookmark, MessageSquareText, Quote, CircleUser } from "lucide-react";
+import { ChatListPanel } from "@/components/chat-list-panel";
 
-// Mobile: black bottom bar with five icon tabs.
-// Desktop (md+): the same five tabs become a floating vertical pill on
-// the left edge, vertically centered. Hover an icon → its label slides
-// out to the right in its own black block.
+// Mobile: black bottom bar with five icon tabs (Discover, Matches, Chats,
+// Spill, You).
+// md+: floating vertical pill on the left with four tabs (Chats is dropped
+// because lg+ shows a permanent chat list panel right next to the sidebar).
+// lg+: chat list panel renders alongside the sidebar — picking a chat opens
+// it in the main area.
 export function AppShell({ children }: { children: React.ReactNode }) {
   return (
     <div className="min-h-screen bg-white flex flex-col">
-      <main className="flex-1 mx-auto w-full max-w-md pb-24 md:pb-12">{children}</main>
+      <main className="flex-1 mx-auto w-full max-w-md pb-24 md:pb-12 lg:mx-0 lg:ml-[400px]">
+        {children}
+      </main>
       <SideNav />
+      <ChatListPanel />
     </div>
   );
 }
 
-const TABS = [
+const MOBILE_TABS = [
   { href: "/discover",    label: "Discover", Icon: Compass },
   { href: "/hooks",       label: "Matches",  Icon: Bookmark },
   { href: "/matches",     label: "Chats",    Icon: MessageSquareText },
+  { href: "/confessions", label: "Spill",    Icon: Quote },
+  { href: "/me",          label: "You",      Icon: CircleUser }
+];
+
+// Desktop sidebar has no Chats tab — the chat list panel is permanent.
+const DESKTOP_TABS = [
+  { href: "/discover",    label: "Discover", Icon: Compass },
+  { href: "/hooks",       label: "Matches",  Icon: Bookmark },
   { href: "/confessions", label: "Spill",    Icon: Quote },
   { href: "/me",          label: "You",      Icon: CircleUser }
 ];
@@ -39,7 +53,7 @@ function SideNav() {
       >
         <div className="mx-auto max-w-md">
           <ul className="grid grid-cols-5">
-            {TABS.map((t) => {
+            {MOBILE_TABS.map((t) => {
               const active = path === t.href || path.startsWith(`${t.href}/`);
               const Icon = t.Icon;
               return (
@@ -70,7 +84,7 @@ function SideNav() {
         }}
         aria-label="Primary"
       >
-        {TABS.map((t) => {
+        {DESKTOP_TABS.map((t) => {
           const active = path === t.href || path.startsWith(`${t.href}/`);
           const Icon = t.Icon;
           return (
@@ -89,9 +103,6 @@ function SideNav() {
                     : "text-white/55 group-hover:text-white transition-colors"
                 }
               />
-
-              {/* Label slides out to the right of the icon on hover.
-                  Its own black block, separate from the sidebar pill. */}
               <span
                 className="
                   absolute left-full top-1/2 -translate-y-1/2 ml-3
