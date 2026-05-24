@@ -116,26 +116,26 @@ export default async function DiscoverPage() {
       if (error) throw error;
 
       // Interest-overlap score — built dynamically from whatever profile
-      // fields both me and the candidate actually have populated. No
-      // hard-coded category list; each shared attribute that's filled in on
-      // both sides contributes to the score. The score becomes the primary
-      // sort key, so profiles with overlap come first.
+      // fields both sides actually have populated. Snapshot my fields first
+      // because TypeScript's null-narrowing from the early redirect doesn't
+      // carry into nested closures.
+      const myIntentions = me.intentions;
+      const myRelType = me.relationshipType;
+      const myLocation = me.location;
+      const myAge = me.age;
+      const myFounding = me.foundingMember;
+
       function overlapScore(c: any): number {
         let s = 0;
-        // Same dating intentions
-        if (me.intentions && c.intentions && me.intentions === c.intentions) s += 3;
-        // Same relationship-type expectation
-        if (me.relationshipType && c.relationshipType && me.relationshipType === c.relationshipType) s += 2;
-        // Same city / location
-        if (me.location && c.location && me.location === c.location) s += 4;
-        // Age proximity: bonus when within 3 years either way
-        if (me.age != null && c.age != null) {
-          const diff = Math.abs(Number(me.age) - Number(c.age));
+        if (myIntentions && c.intentions && myIntentions === c.intentions) s += 3;
+        if (myRelType && c.relationshipType && myRelType === c.relationshipType) s += 2;
+        if (myLocation && c.location && myLocation === c.location) s += 4;
+        if (myAge != null && c.age != null) {
+          const diff = Math.abs(Number(myAge) - Number(c.age));
           if (diff <= 3) s += 2;
           else if (diff <= 6) s += 1;
         }
-        // Founding-member affinity (same cohort)
-        if (me.foundingMember && c.foundingMember) s += 1;
+        if (myFounding && c.foundingMember) s += 1;
         return s;
       }
 
