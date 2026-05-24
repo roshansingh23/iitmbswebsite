@@ -1,7 +1,10 @@
 // Silent email-domain gate. Anyone outside the allowlist sees a generic
 // rejection — never reveal which domain qualifies.
 
-const DEFAULT_DOMAINS = ["iitm.ac.in"];
+// Open for now. To re-enable iitm.ac.in restriction:
+//   - set DEFAULT_DOMAINS back to ["iitm.ac.in"], OR
+//   - set ALLOWED_EMAIL_DOMAINS=iitm.ac.in on Vercel
+const DEFAULT_DOMAINS: string[] = [];
 
 function allowlist(): string[] {
   const fromEnv = (process.env.ALLOWED_EMAIL_DOMAINS ?? "").trim();
