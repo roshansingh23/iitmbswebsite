@@ -75,6 +75,15 @@ export default async function DiscoverPage() {
       (myHooks ?? []).forEach((h: any) => excludeIds.add(h.toUserId));
       excludeIds.delete(me.id);
 
+      // Mutual visibility rule — a candidate is ONLY shown when:
+      //   1. their gender is in my showMe  (.in on gender)
+      //   2. my gender is in their showMe  (.contains on showMe)
+      // The second clause is what guarantees that, e.g., a gay man
+      // (showMe = ["man"]) NEVER appears to a woman (her gender "woman"
+      // isn't in his ["man"]), and a straight woman (showMe = ["man"])
+      // never appears to another woman either. Empty-showMe rows can't
+      // satisfy the contains check, so unfinished onboarding profiles
+      // are filtered out automatically.
       let q = admin
         .from("User")
         .select(
@@ -84,6 +93,7 @@ export default async function DiscoverPage() {
         )
         .neq("id", me.id)
         .eq("paused", false)
+        .not("showMe", "is", null)
         .in("gender", wantGenders as any)
         .contains("showMe", [me.gender])
         .gte("age", me.filterAgeMin ?? 18)
