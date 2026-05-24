@@ -16,6 +16,10 @@ type Candidate = {
   gender: string | null;
   orientation: string | null;
   bio: string | null;
+  height: string | null;
+  location: string | null;
+  intentions: string | null;
+  relationshipType: string | null;
   verified: boolean;
   foundingMember: boolean;
   paused: boolean;
@@ -65,14 +69,16 @@ export default async function DiscoverPage() {
       let q = admin
         .from("User")
         .select(
-          "id,name,age,gender,orientation,bio,verified,foundingMember,paused,showMe,lastSeenAt,createdAt," +
+          "id,name,age,gender,orientation,bio,height,location,intentions,\"relationshipType\",verified,foundingMember,paused,showMe,lastSeenAt,createdAt," +
           "photos:Photo(id,url,position)," +
           "userPrompts:UserPrompt(id,answer,position,prompt:Prompt(id,text))"
         )
         .neq("id", me.id)
         .eq("paused", false)
         .in("gender", wantGenders as any)
-        .contains("showMe", [me.gender]);
+        .contains("showMe", [me.gender])
+        .gte("age", me.filterAgeMin ?? 18)
+        .lte("age", me.filterAgeMax ?? 99);
       if (blockIds.size > 0) {
         q = q.not("id", "in", `(${Array.from(blockIds).join(",")})`);
       }
@@ -103,7 +109,7 @@ export default async function DiscoverPage() {
   return (
     <AppShell>
       <div className="pt-2 pb-12">
-        <FilterBar />
+        <FilterBar initialAgeMin={me.filterAgeMin} initialAgeMax={me.filterAgeMax} />
         {needsCompletion && <CompletionBanner />}
 
         {dbError ? (

@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Compass, Bookmark, MessageCircle, Sparkles, UserRound } from "lucide-react";
+import { Compass, Bookmark, MessageSquareText, Quote, CircleUser } from "lucide-react";
 
 // Mobile-only shell. No top bar. Black bottom nav with crisp icons from
 // lucide-react (open-source, MIT) — refined strokes, optical sizing.
@@ -19,9 +19,9 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 const TABS = [
   { href: "/discover",    label: "Discover", Icon: Compass },
   { href: "/hooks",       label: "Hooks",    Icon: Bookmark },
-  { href: "/matches",     label: "Chats",    Icon: MessageCircle },
-  { href: "/confessions", label: "Spill",    Icon: Sparkles },
-  { href: "/me",          label: "You",      Icon: UserRound }
+  { href: "/matches",     label: "Chats",    Icon: MessageSquareText },
+  { href: "/confessions", label: "Spill",    Icon: Quote },
+  { href: "/me",          label: "You",      Icon: CircleUser }
 ];
 
 function BottomNav() {

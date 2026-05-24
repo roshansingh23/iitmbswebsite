@@ -98,6 +98,14 @@ model User {
   gender          Gender?
   orientation     Orientation?
   showMe          Gender[]      @default([])
+  // Free-form profile fields surfaced on the discover card
+  height          String?
+  location        String?
+  intentions      String?
+  relationshipType String?
+  // Discovery filter preferences (set from the filter chips)
+  filterAgeMin    Int           @default(18)
+  filterAgeMax    Int           @default(99)
   accessTier      AccessTier    @default(free)
   verified        Boolean       @default(false)
   foundingMember  Boolean       @default(false)

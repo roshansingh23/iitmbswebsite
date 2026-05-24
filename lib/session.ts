@@ -11,6 +11,12 @@ export type Profile = {
   gender: string | null;
   orientation: string | null;
   showMe: string[];
+  height: string | null;
+  location: string | null;
+  intentions: string | null;
+  relationshipType: string | null;
+  filterAgeMin: number;
+  filterAgeMax: number;
   accessTier: string;
   verified: boolean;
   foundingMember: boolean;
@@ -19,10 +25,6 @@ export type Profile = {
   isAdmin: boolean;
 };
 
-// Returns the joined user — Supabase auth identity + our public.User profile.
-// Uses the service_role key for DB access, so it works WITHOUT a Postgres
-// password. Never throws; returns null on any failure so calling pages can
-// redirect cleanly to /login.
 export async function getSessionUser(): Promise<Profile | null> {
   try {
     const supabase = supabaseServer();
@@ -35,25 +37,19 @@ export async function getSessionUser(): Promise<Profile | null> {
       return null;
     }
 
-    // Look for existing profile keyed to this auth.users id.
     const { data: existing } = await admin
       .from("User")
       .select("*")
       .eq("authId", authUser.id)
       .maybeSingle();
 
-    if (existing) {
-      return normalize(existing);
-    }
+    if (existing) return normalize(existing);
 
-    // First touch — create a minimal profile row. authId column is UUID, the
-    // rest get safe defaults from the schema.
     const meta = (authUser.user_metadata ?? {}) as Record<string, unknown>;
     const name =
       (meta.full_name as string | undefined) ??
       (meta.name as string | undefined) ??
       null;
-
     const id = "c" + Math.random().toString(36).slice(2, 14) + Math.random().toString(36).slice(2, 14);
     const now = new Date().toISOString();
     const { data: created, error } = await admin
@@ -66,16 +62,15 @@ export async function getSessionUser(): Promise<Profile | null> {
         qrCode: randomQrCode(),
         showMe: [],
         accessTier: "free",
-        // Prisma usually fills this — Supabase JS doesn't, and the DB column
-        // is NOT NULL with no default, so omitting it fails the insert.
+        filterAgeMin: 18,
+        filterAgeMax: 99,
         updatedAt: now
       })
       .select("*")
       .single();
 
     if (error) {
-      console.error("First-touch User insert failed:", error.message, error.details ?? "");
-      // Race or unique-constraint — re-fetch by authId or email.
+      console.error("First-touch User insert failed:", error.message);
       const { data: refetched } = await admin
         .from("User")
         .select("*")
@@ -102,6 +97,12 @@ function normalize(row: any): Profile {
     gender: row.gender,
     orientation: row.orientation,
     showMe: row.showMe ?? [],
+    height: row.height ?? null,
+    location: row.location ?? null,
+    intentions: row.intentions ?? null,
+    relationshipType: row.relationshipType ?? null,
+    filterAgeMin: row.filterAgeMin ?? 18,
+    filterAgeMax: row.filterAgeMax ?? 99,
     accessTier: row.accessTier ?? "free",
     verified: !!row.verified,
     foundingMember: !!row.foundingMember,

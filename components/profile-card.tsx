@@ -6,8 +6,10 @@ import {
   Heart as HeartIcon,
   Ruler as RulerIcon,
   MapPin as MapPinIcon,
-  Calendar as CalendarIcon,
-  Quote as QuoteIcon
+  Cake as CakeIcon,
+  Quote as QuoteIcon,
+  Sprout as SproutIcon,
+  Users as UsersIcon
 } from "lucide-react";
 
 type Photo = { id: string; url: string; position: number };
@@ -21,6 +23,10 @@ export type Candidate = {
   gender: string | null;
   orientation: string | null;
   bio: string | null;
+  height: string | null;
+  location: string | null;
+  intentions: string | null;
+  relationshipType: string | null;
   verified: boolean;
   foundingMember: boolean;
   photos: Photo[];
@@ -35,11 +41,6 @@ const ORIENTATION_LABEL: Record<string, string> = {
   bisexual: "Bisexual", pansexual: "Pansexual", asexual: "Asexual", other: "Other"
 };
 
-/* ─────────────────────────────────────────────────────────────────────────
-   Block order: photo₁ → prompt₁ → details → photo₂ → prompt₂ → photo₃ →
-   prompt₃ → … pairing the rest. When prompts run out, the remaining
-   photos stack at the end.
-   ───────────────────────────────────────────────────────────────────────── */
 function buildBlocks(photos: Photo[], prompts: UserPrompt[]) {
   const blocks: ({ kind: "photo"; photo: Photo } | { kind: "prompt"; up: UserPrompt } | { kind: "details" })[] = [];
   if (photos[0]) blocks.push({ kind: "photo", photo: photos[0] });
@@ -62,9 +63,8 @@ export function ProfileCard({ candidate }: { candidate: Candidate }) {
 
   return (
     <article>
-      <header className="px-1 mb-3 flex items-baseline justify-between">
+      <header className="px-1 mb-3">
         <h2 className="font-extrabold text-3xl tracking-[-0.03em]">{candidate.name ?? "—"}</h2>
-        <span className="text-sm text-muted">{candidate.age ?? ""}</span>
       </header>
 
       <div className="space-y-3">
@@ -102,14 +102,16 @@ function InfoCard({ candidate }: { candidate: Candidate }) {
   const rows: { icon: React.ReactNode; label: string }[] = [];
   if (candidate.gender) rows.push({ icon: <UserIcon size={20} strokeWidth={1.75} />, label: GENDER_LABEL[candidate.gender] ?? candidate.gender });
   if (candidate.orientation) rows.push({ icon: <HeartIcon size={20} strokeWidth={1.75} />, label: ORIENTATION_LABEL[candidate.orientation] ?? candidate.orientation });
+  if (candidate.intentions) rows.push({ icon: <SproutIcon size={20} strokeWidth={1.75} />, label: candidate.intentions });
+  if (candidate.relationshipType) rows.push({ icon: <UsersIcon size={20} strokeWidth={1.75} />, label: candidate.relationshipType });
   if (candidate.bio) rows.push({ icon: <QuoteIcon size={20} strokeWidth={1.75} />, label: candidate.bio });
 
   return (
     <div className="card-line p-5">
       <div className="grid grid-cols-3 gap-3 pb-4 border-b border-hairline">
-        <TopCell icon={<CalendarIcon size={20} strokeWidth={1.75} />} label={candidate.age != null ? String(candidate.age) : "—"} />
-        <TopCell icon={<RulerIcon size={20} strokeWidth={1.75} />} label="—" />
-        <TopCell icon={<MapPinIcon size={20} strokeWidth={1.75} />} label="—" />
+        <TopCell icon={<CakeIcon size={20} strokeWidth={1.75} />} label={candidate.age != null ? String(candidate.age) : "—"} />
+        <TopCell icon={<RulerIcon size={20} strokeWidth={1.75} />} label={candidate.height ?? "—"} />
+        <TopCell icon={<MapPinIcon size={20} strokeWidth={1.75} />} label={candidate.location ?? "—"} />
       </div>
       <ul className="divide-y divide-hairline">
         {rows.map((r, i) => (
@@ -125,8 +127,8 @@ function InfoCard({ candidate }: { candidate: Candidate }) {
 
 function TopCell({ icon, label }: { icon: React.ReactNode; label: string }) {
   return (
-    <div className="flex items-center gap-2 px-1">
-      <span className="text-ink/80">{icon}</span>
+    <div className="flex items-center gap-2 px-1 min-w-0">
+      <span className="text-ink/80 shrink-0">{icon}</span>
       <span className="font-medium text-sm truncate">{label}</span>
     </div>
   );
