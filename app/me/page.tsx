@@ -3,7 +3,7 @@ import { redirect } from "next/navigation";
 import { getSessionUser } from "@/lib/session";
 import { supabaseAdmin } from "@/lib/supabase-server";
 import { AppShell } from "@/components/app-shell";
-import { PhotoCard } from "@/components/photo-card";
+import { PhotoManager, type Photo } from "@/components/photo-manager";
 import { PromptBlock } from "@/components/prompt-block";
 import { Badge } from "@/components/ui/badge";
 import { SignOutButton } from "./signout";
@@ -15,13 +15,13 @@ export default async function MePage() {
   const me = await getSessionUser();
   if (!me) redirect("/login");
 
-  let photos: { id: string; url: string }[] = [];
+  let photos: Photo[] = [];
   let userPrompts: { id: string; answer: string; prompt: { text: string } }[] = [];
   const admin = supabaseAdmin();
   if (admin) {
     const { data: ph } = await admin
       .from("Photo")
-      .select("id,url,position")
+      .select("id,url,publicId,position")
       .eq("userId", me.id)
       .order("position", { ascending: true });
     photos = (ph ?? []) as any;
@@ -39,12 +39,11 @@ export default async function MePage() {
 
   return (
     <AppShell>
-      <div className="mx-auto max-w-2xl px-6 lg:px-10 py-12">
+      <div className="mx-auto max-w-md md:max-w-2xl px-4 sm:px-6 pt-6 pb-28">
         <header className="flex flex-wrap items-baseline justify-between gap-4">
           <div>
-            <p className="eyebrow">Your profile</p>
-            <h1 className="display text-5xl mt-3">{me.name ?? "—"}</h1>
-            <p className="mt-2 text-muted text-sm">{me.age ?? "—"}</p>
+            <h1 className="font-extrabold text-3xl tracking-[-0.04em]">{me.name ?? "—"}</h1>
+            <p className="mt-1 text-muted text-sm">{me.age ?? "—"}</p>
           </div>
           <div className="flex flex-wrap gap-2">
             {me.verified && <Badge>Verified</Badge>}
@@ -54,64 +53,71 @@ export default async function MePage() {
         </header>
 
         {needsOnboarding && (
-          <div className="mt-8 card-line p-6">
-            <p className="serif italic text-xl">Finish setting up to start matching.</p>
-            <Link href="/onboarding" className="btn-ink mt-5 inline-flex">Continue setup</Link>
+          <div className="mt-6 card-line p-5">
+            <p className="font-semibold">Finish setting up to start matching.</p>
+            <Link href="/onboarding" className="btn-ink mt-4 inline-flex">Continue setup</Link>
           </div>
         )}
 
-        <section className="mt-12 card-line p-7">
-          <p className="eyebrow">Your QR</p>
-          <p className="mt-3 text-sm text-muted">
-            Show this to someone IRL — scanning opens your profile and lets them
-            connect instantly.
+        <section className="mt-10">
+          <header className="flex items-baseline justify-between mb-4">
+            <h2 className="font-semibold text-lg">Photos</h2>
+            <span className="text-xs text-muted">{photos.length} / 9</span>
+          </header>
+          <PhotoManager initialPhotos={photos} />
+        </section>
+
+        {userPrompts.length > 0 && (
+          <section className="mt-10">
+            <header className="flex items-baseline justify-between mb-4">
+              <h2 className="font-semibold text-lg">Answers</h2>
+              <Link href="/onboarding" className="text-xs underline text-muted">Edit</Link>
+            </header>
+            <ul className="space-y-3">
+              {userPrompts.map((up: any) => (
+                <li key={up.id}>
+                  <PromptBlock question={up.prompt.text} answer={up.answer} />
+                </li>
+              ))}
+            </ul>
+          </section>
+        )}
+
+        <section className="mt-10 card-line p-5">
+          <h2 className="font-semibold text-lg">Your QR</h2>
+          <p className="mt-1 text-sm text-muted">
+            Show in person — scanning opens your profile and connects instantly.
           </p>
           {me.qrCode ? (
-            <div className="mt-6">
+            <div className="mt-4 flex items-start gap-4">
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
                 src={`/api/qr/${me.qrCode}`}
                 alt="Your QR"
-                width={200}
-                height={200}
-                className="rounded-[2px] border border-hairline"
+                width={140}
+                height={140}
+                className="rounded-[10px] border border-hairline"
               />
-              <p className="mt-3 text-xs text-muted font-mono">{me.qrCode}</p>
+              <p className="text-xs text-muted font-mono break-all pt-1">{me.qrCode}</p>
             </div>
           ) : (
             <p className="mt-3 text-sm">Your QR is being generated.</p>
           )}
         </section>
 
-        {photos.length > 0 && (
-          <section className="mt-12 grid grid-cols-2 gap-4">
-            {photos.map((p) => (
-              <PhotoCard key={p.id} url={p.url} alt="" />
-            ))}
-          </section>
-        )}
-
-        {userPrompts.length > 0 && (
-          <section className="mt-10 space-y-4">
-            {userPrompts.map((up: any) => (
-              <PromptBlock key={up.id} question={up.prompt.text} answer={up.answer} />
-            ))}
-          </section>
-        )}
-
-        <section className="mt-14 border-t border-hairline pt-8 space-y-4">
+        <section className="mt-10 card-line p-5">
           <div className="flex items-center justify-between">
             <div>
-              <p className="serif italic text-xl">Pause mode</p>
-              <p className="text-sm text-muted">Hide your profile from discovery.</p>
+              <p className="font-semibold">Pause mode</p>
+              <p className="text-sm text-muted mt-1">Hide your profile from discovery.</p>
             </div>
             <PauseToggle initial={me.paused} />
           </div>
+        </section>
 
-          <div className="flex items-center justify-between pt-4 border-t border-hairline">
-            <Link href="/onboarding" className="btn-quiet">Edit profile</Link>
-            <SignOutButton />
-          </div>
+        <section className="mt-8 flex items-center justify-between">
+          <Link href="/onboarding" className="text-sm underline">Edit answers</Link>
+          <SignOutButton />
         </section>
       </div>
     </AppShell>
