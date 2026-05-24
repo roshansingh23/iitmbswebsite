@@ -13,6 +13,7 @@ import { SignOutButton } from "./signout";
 import { PauseToggle } from "./pause";
 import { AddPromptButton } from "@/components/add-prompt-button";
 import { ScanQrButton } from "@/components/scan-qr-button";
+import { DownloadAppRow } from "@/components/download-app-row";
 
 export const dynamic = "force-dynamic";
 
@@ -187,6 +188,8 @@ export default async function MePage() {
             <PauseToggle initial={me.paused} />
           </div>
         </section>
+
+        <DownloadAppRow />
 
         <section className="mt-8 flex items-center justify-between">
           <Link href="/onboarding" className="text-sm underline">Edit answers</Link>
