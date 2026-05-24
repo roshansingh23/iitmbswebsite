@@ -181,7 +181,7 @@ function LabsBlock() {
             <Frame aspect="4/3" label="Studio" />
           </div>
           <div className="md:col-span-6">
-            <p className="eyebrow">Inside Hooked.</p>
+            <p className="eyebrow">Inside Mismatched.</p>
             <h2 className="mt-4 display text-4xl md:text-5xl lg:text-6xl">
               We read every<br/>
               <span className="display-italic font-medium">first message.</span>
@@ -228,7 +228,7 @@ function SiteFooter() {
       <div className="mx-auto max-w-7xl px-6 lg:px-10 py-16 grid gap-10 md:grid-cols-12">
         <div className="md:col-span-5">
           <Link href="/" className="font-extrabold text-2xl tracking-[-0.04em] text-white">
-            Hooked.
+            Mismatched.
           </Link>
         </div>
 
@@ -293,7 +293,7 @@ function SiteFooter() {
       </div>
 
       <div className="mx-auto max-w-7xl px-6 lg:px-10 h-14 flex items-center justify-between text-xs" style={{ color: "rgba(255,255,255,0.55)" }}>
-        <span>© {year} Hooked.</span>
+        <span>© {year} Mismatched.</span>
         <span>Made in India.</span>
       </div>
     </footer>

@@ -21,8 +21,8 @@ const newsreader = Newsreader({
 
 export const metadata: Metadata = {
   metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000"),
-  title: { default: "Hooked. — a quieter dating app", template: "%s · Hooked." },
-  description: "Prompts over poses, hooks over swipes, conversations that don't time out on you.",
+  title: { default: "Mismatched. — a quieter dating app", template: "%s · Mismatched." },
+  description: "Prompts over poses, match requests over swipes, conversations that don't time out on you.",
   robots: { index: true, follow: true }
 };
 

@@ -25,7 +25,7 @@ export default async function LoginPage() {
         <LoginGallery />
         <div className="absolute top-6 left-6 z-10">
           <Link href="/" className="font-extrabold text-xl tracking-[-0.04em]">
-            Hooked.
+            Mismatched.
           </Link>
         </div>
       </aside>

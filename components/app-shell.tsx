@@ -18,7 +18,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
 const TABS = [
   { href: "/discover",    label: "Discover", Icon: Compass },
-  { href: "/hooks",       label: "Hooks",    Icon: Bookmark },
+  { href: "/hooks",       label: "Matches",  Icon: Bookmark },
   { href: "/matches",     label: "Chats",    Icon: MessageSquareText },
   { href: "/confessions", label: "Spill",    Icon: Quote },
   { href: "/me",          label: "You",      Icon: CircleUser }

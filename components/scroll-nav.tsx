@@ -64,7 +64,7 @@ export function ScrollNav() {
             href="/"
             className="justify-self-center font-extrabold text-2xl md:text-3xl tracking-[-0.04em]"
           >
-            Hooked.
+            Mismatched.
           </Link>
 
           <div className="justify-self-end">
@@ -102,7 +102,7 @@ export function ScrollNav() {
               onClick={() => setMenuOpen(false)}
               className="font-extrabold text-xl tracking-[-0.04em] text-white"
             >
-              Hooked.
+              Mismatched.
             </Link>
             <button
               type="button"
@@ -143,7 +143,7 @@ export function ScrollNav() {
             className="absolute bottom-8 left-6 right-6 text-xs"
             style={{ color: "rgba(255,255,255,0.5)" }}
           >
-            © {new Date().getFullYear()} Hooked.
+            © {new Date().getFullYear()} Mismatched.
           </div>
         </div>
       </div>
