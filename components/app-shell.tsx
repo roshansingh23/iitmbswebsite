@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Compass, Bookmark, MessageSquareText, Quote, CircleUser } from "lucide-react";
 import { ChatListPanel } from "@/components/chat-list-panel";
+import { PushPermissionPrompt } from "@/components/push-permission-prompt";
 
 // Mobile: black bottom bar with five icon tabs (Discover, Matches, Chats,
 // Spill, You).
@@ -19,6 +20,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       </main>
       <SideNav />
       <ChatListPanel />
+      <PushPermissionPrompt />
     </div>
   );
 }

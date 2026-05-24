@@ -141,6 +141,7 @@ model User {
   confessionReplies   ConfessionReply[]
   referralsMade   Referral[]    @relation("ReferralInviter")
   referralsGot    Referral[]    @relation("ReferralInvitee")
+  pushSubscriptions PushSubscription[]
 
   @@index([gender, orientation, paused])
 }
@@ -366,6 +367,18 @@ model Impression {
 
   @@unique([viewerId, candidateId])
   @@index([viewerId, lastShownAt(sort: Desc)])
+}
+
+model PushSubscription {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  endpoint  String   @unique
+  p256dh    String
+  auth      String
+  createdAt DateTime @default(now())
+
+  @@index([userId])
 }
 
 enum PaymentKind {

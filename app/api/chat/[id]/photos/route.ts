@@ -3,6 +3,7 @@ import { z } from "zod";
 import { requireUser } from "@/lib/session";
 import { supabaseAdmin, supabaseBroadcast } from "@/lib/supabase-server";
 import { checkRateLimit } from "@/lib/rate-limit";
+import { sendPushToUser } from "@/lib/web-push";
 
 export const runtime = "nodejs";
 
@@ -80,6 +81,24 @@ export async function POST(req: Request, { params }: { params: { id: string } })
     fromUserId: msg.fromUserId,
     createdAt: msg.createdAt
   }).catch(() => {});
+
+  // Push the other party.
+  const otherId = (await admin
+    .from("Conversation")
+    .select("userAId,userBId")
+    .eq("id", params.id)
+    .maybeSingle()).data;
+  const recipient = otherId
+    ? ((otherId as any).userAId === me.id ? (otherId as any).userBId : (otherId as any).userAId)
+    : null;
+  if (recipient) {
+    sendPushToUser(recipient, {
+      title: me.name ?? "New photo",
+      body: "sent you a photo",
+      url: `/chat/${params.id}`,
+      tag: `chat:${params.id}`
+    }).catch(() => {});
+  }
 
   return NextResponse.json({
     message: {

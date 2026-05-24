@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { requireUser } from "@/lib/session";
 import { supabaseAdmin } from "@/lib/supabase-server";
+import { sendPushToUser } from "@/lib/web-push";
 
 export const runtime = "nodejs";
 
@@ -176,6 +177,27 @@ export async function POST(req: Request) {
       await admin.from("Conversation").update({ matchId, updatedAt: now }).eq("id", convId);
     }
     matched = true;
+
+    // It's a Match. Push both sides. Fire-and-forget.
+    const myName = me.name ?? "Someone";
+    const { data: otherUser } = await admin
+      .from("User")
+      .select("name")
+      .eq("id", toUserId)
+      .maybeSingle();
+    const otherName = (otherUser as any)?.name ?? "Someone";
+    sendPushToUser(toUserId, {
+      title: "It's a match",
+      body: `${myName} matched with you. Say hi.`,
+      url: `/chat/${convId}`,
+      tag: `match:${convId}`
+    }).catch(() => {});
+    sendPushToUser(me.id, {
+      title: "It's a match",
+      body: `${otherName} matched with you. Say hi.`,
+      url: `/chat/${convId}`,
+      tag: `match:${convId}`
+    }).catch(() => {});
   }
 
   return NextResponse.json({ ok: true, conversationId: convId, matched });
