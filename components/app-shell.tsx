@@ -1,68 +1,107 @@
-import Link from "next/link";
+"use client";
 
-// Minimal app chrome: hairline top bar + bottom nav on mobile, side rail on
-// desktop. No logos. No icons except the three approved actions.
+import Link from "next/link";
+import { usePathname } from "next/navigation";
+
+// Mobile-first shell for the signed-in app. Same brand chrome as the marketing
+// homepage so the transition after login doesn't feel like jumping to a
+// different product. Single sticky top bar; bottom tab strip only on mobile.
+
 export function AppShell({ children }: { children: React.ReactNode }) {
   return (
-    <div className="min-h-screen flex flex-col">
+    <div className="min-h-screen bg-white flex flex-col">
       <TopBar />
-      <div className="flex-1 flex">
-        <aside className="hidden md:block w-56 border-r border-hairline">
-          <SideNav />
-        </aside>
-        <main className="flex-1 min-w-0 pb-24 md:pb-0">{children}</main>
-      </div>
-      <MobileNav />
+      <main className="flex-1 min-w-0 pb-24 md:pb-12">{children}</main>
+      <BottomNav />
     </div>
   );
 }
 
 function TopBar() {
   return (
-    <header className="border-b border-hairline bg-bone">
-      <div className="mx-auto max-w-6xl px-6 lg:px-10 h-14 flex items-center justify-between">
-        <Link href="/discover" className="serif italic text-xl tracking-tight">— dating</Link>
-        <nav className="hidden md:flex items-center gap-6 text-sm text-muted">
-          <Link href="/me" className="hover:text-ink">Profile</Link>
-          <Link href="/upgrade" className="hover:text-ink">Upgrade</Link>
+    <header className="sticky top-0 z-40 bg-white">
+      <div className="mx-auto max-w-3xl md:max-w-5xl px-5 sm:px-6 lg:px-10 h-16 flex items-center justify-between">
+        <Link
+          href="/discover"
+          className="font-extrabold text-2xl tracking-[-0.04em]"
+        >
+          Hooked.
+        </Link>
+        <nav className="hidden md:flex items-center gap-7 text-sm font-medium text-muted">
+          <DesktopLink href="/discover">Discover</DesktopLink>
+          <DesktopLink href="/hooks">Hooks</DesktopLink>
+          <DesktopLink href="/matches">Hooked</DesktopLink>
+          <DesktopLink href="/confessions">Confessions</DesktopLink>
+          <DesktopLink href="/me">Profile</DesktopLink>
         </nav>
       </div>
     </header>
   );
 }
 
-const links = [
-  { href: "/discover", label: "Discover" },
-  { href: "/hooks", label: "Hooks" },
-  { href: "/matches", label: "Hooked" },
-  { href: "/confessions", label: "Confessions" },
-  { href: "/me", label: "Profile" }
+function DesktopLink({ href, children }: { href: string; children: React.ReactNode }) {
+  const path = usePathname();
+  const active = path === href || path.startsWith(`${href}/`);
+  return (
+    <Link
+      href={href}
+      className={
+        "transition-colors " +
+        (active ? "text-ink" : "hover:text-ink")
+      }
+    >
+      {children}
+    </Link>
+  );
+}
+
+const TABS = [
+  { href: "/discover",    label: "Discover" },
+  { href: "/hooks",       label: "Hooks" },
+  { href: "/matches",     label: "Chats" },
+  { href: "/confessions", label: "Spill" },
+  { href: "/me",          label: "You" }
 ];
 
-function SideNav() {
+function BottomNav() {
+  const path = usePathname();
   return (
-    <nav className="py-10 px-7 flex flex-col gap-1 text-sm">
-      {links.map((l) => (
-        <Link key={l.href} href={l.href} className="py-2 hover:text-ink text-muted">
-          {l.label}
-        </Link>
-      ))}
+    <nav
+      className="md:hidden fixed bottom-0 inset-x-0 bg-white z-30"
+      style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
+    >
+      <div className="border-t border-hairline">
+        <ul className="grid grid-cols-5">
+          {TABS.map((t) => {
+            const active = path === t.href || path.startsWith(`${t.href}/`);
+            return (
+              <li key={t.href}>
+                <Link
+                  href={t.href}
+                  className={
+                    "flex flex-col items-center justify-center gap-1 py-3 text-[0.65rem] uppercase tracking-[0.18em] font-semibold transition-colors " +
+                    (active ? "text-ink" : "text-muted")
+                  }
+                >
+                  <Dot active={active} />
+                  {t.label}
+                </Link>
+              </li>
+            );
+          })}
+        </ul>
+      </div>
     </nav>
   );
 }
 
-function MobileNav() {
+function Dot({ active }: { active: boolean }) {
   return (
-    <nav className="fixed bottom-0 inset-x-0 md:hidden border-t border-hairline bg-bone/95 backdrop-blur z-30">
-      <ul className="grid grid-cols-5 text-[0.65rem] uppercase tracking-[0.18em] text-muted">
-        {links.map((l) => (
-          <li key={l.href}>
-            <Link href={l.href} className="flex items-center justify-center py-3 hover:text-ink">
-              {l.label}
-            </Link>
-          </li>
-        ))}
-      </ul>
-    </nav>
+    <span
+      className={
+        "block w-1.5 h-1.5 rounded-full transition-colors " +
+        (active ? "bg-ink" : "bg-hairline")
+      }
+    />
   );
 }
