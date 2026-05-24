@@ -23,6 +23,13 @@ html, body {
   text-rendering: optimizeLegibility;
 }
 
+/* Global tap-feedback hygiene — kills the iOS/Android default 300ms
+   click delay and the grey/blue tap-highlight overlay. */
+a, button, [role="button"] {
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+}
+
 ::selection { background: var(--ink); color: #fff; }
 
 .display {
@@ -56,9 +63,12 @@ html, body {
   font-size: 0.78rem;
   font-weight: 600;
   letter-spacing: 0.06em;
-  transition: opacity 180ms ease, transform 180ms ease;
+  transition: opacity 120ms ease, transform 90ms ease;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
 }
 .btn-ink:hover { opacity: 0.88; transform: translateY(-1px); }
+.btn-ink:active { transform: scale(0.97); opacity: 0.92; }
 .btn-ink:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
 
 .btn-line {
@@ -74,9 +84,12 @@ html, body {
   color: var(--ink);
   border: 1px solid var(--ink);
   background: transparent;
-  transition: background 180ms ease;
+  transition: background 120ms ease, transform 90ms ease;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
 }
 .btn-line:hover { background: var(--tint); }
+.btn-line:active { transform: scale(0.97); background: var(--tint); }
 
 .btn-quiet {
   display: inline-flex;

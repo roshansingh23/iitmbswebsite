@@ -87,22 +87,39 @@ export function ChatRoom({
   }, [conversationId, msgs]);
 
   async function send() {
-    if (!body.trim() || sending || locked) return;
+    const text = body.trim();
+    if (!text || sending || locked) return;
+    // Optimistic UI: clear the input and render the message immediately
+    // so the tap feels instant. Reconcile or roll back once the server
+    // responds.
+    const tempId = `temp-${Date.now()}`;
+    const optimistic: Msg = {
+      id: tempId,
+      body: text,
+      fromUserId: meId,
+      createdAt: new Date().toISOString()
+    };
+    setBody("");
+    setMsgs((m) => [...m, optimistic]);
     setSending(true);
     try {
       const res = await fetch(`/api/chat/${conversationId}/messages`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ body: body.trim() })
+        body: JSON.stringify({ body: text })
       });
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
         if (data?.locked) setLocked(true);
+        // Roll back the optimistic message.
+        setMsgs((m) => m.filter((x) => x.id !== tempId));
         return;
       }
       const data = await res.json();
-      setMsgs((m) => [...m, data.message]);
-      setBody("");
+      // Swap the temp message for the real one (with the canonical id).
+      setMsgs((m) => m.map((x) => (x.id === tempId ? data.message : x)));
+    } catch {
+      setMsgs((m) => m.filter((x) => x.id !== tempId));
     } finally {
       setSending(false);
     }
