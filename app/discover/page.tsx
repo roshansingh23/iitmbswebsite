@@ -3,7 +3,7 @@ import { getSessionUser } from "@/lib/session";
 import { supabaseAdmin } from "@/lib/supabase-server";
 import { gendersIWant } from "@/lib/matching";
 import { AppShell } from "@/components/app-shell";
-import { ProfileCard } from "@/components/profile-card";
+import { DiscoverDeck } from "@/components/discover-deck";
 import { FilterBar } from "@/components/filter-bar";
 import { CompletionBanner } from "@/components/completion-banner";
 
@@ -106,27 +106,19 @@ export default async function DiscoverPage() {
         <FilterBar />
         {needsCompletion && <CompletionBanner />}
 
-        <div className="px-4">
-          {dbError ? (
-            <div className="card-line p-6">
-              <p className="font-semibold text-lg">Couldn't load profiles.</p>
-              <p className="mt-2 text-muted text-sm">Try refreshing in a moment.</p>
-            </div>
-          ) : candidates.length === 0 ? (
-            <div className="card-line p-6">
-              <p className="font-semibold text-lg">No fresh faces today.</p>
-              <p className="mt-2 text-muted text-sm">Come back tomorrow — we shuffle the deck daily.</p>
-            </div>
-          ) : (
-            <ul className="space-y-12">
-              {candidates.map((c) => (
-                <li key={c.id}>
-                  <ProfileCard candidate={c} />
-                </li>
-              ))}
-            </ul>
-          )}
-        </div>
+        {dbError ? (
+          <div className="card-line p-6 mx-4">
+            <p className="font-semibold text-lg">Couldn't load profiles.</p>
+            <p className="mt-2 text-muted text-sm">Try refreshing in a moment.</p>
+          </div>
+        ) : candidates.length === 0 ? (
+          <div className="card-line p-6 mx-4">
+            <p className="font-semibold text-lg">No fresh faces today.</p>
+            <p className="mt-2 text-muted text-sm">Come back tomorrow — we shuffle the deck daily.</p>
+          </div>
+        ) : (
+          <DiscoverDeck candidates={candidates as any} />
+        )}
       </div>
     </AppShell>
   );
