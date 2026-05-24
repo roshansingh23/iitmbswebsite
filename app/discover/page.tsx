@@ -92,7 +92,7 @@ export default async function DiscoverPage() {
 
   return (
     <AppShell>
-      <div className="mx-auto max-w-md md:max-w-2xl px-4 sm:px-6 pt-6 pb-28">
+      <div className="px-4 pt-6 pb-12">
         <header className="flex items-baseline justify-between mb-6">
           <h1 className="font-extrabold text-2xl tracking-[-0.04em]">Discover</h1>
           <span className="text-xs text-muted">{candidates.length} {candidates.length === 1 ? "person" : "people"}</span>

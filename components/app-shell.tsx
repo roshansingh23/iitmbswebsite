@@ -3,15 +3,20 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
-// Mobile-first shell for the signed-in app. Same brand chrome as the marketing
-// homepage so the transition after login doesn't feel like jumping to a
-// different product. Single sticky top bar; bottom tab strip only on mobile.
+// Mobile-first chrome — and mobile-ONLY. The whole signed-in app is locked
+// to a mobile-width container at every viewport so that "Request desktop
+// site" mode in mobile browsers doesn't flip the layout (which previously
+// caused both a visual desktop-view jump after login AND, on some browsers,
+// a cookie-isolation-driven apparent logout when toggling back to mobile).
+//
+// No md:/lg: breakpoints anywhere — same layout on a phone, a tablet, or
+// when a desktop browser opens the URL.
 
 export function AppShell({ children }: { children: React.ReactNode }) {
   return (
     <div className="min-h-screen bg-white flex flex-col">
       <TopBar />
-      <main className="flex-1 min-w-0 pb-24 md:pb-12">{children}</main>
+      <main className="flex-1 mx-auto w-full max-w-md pb-24">{children}</main>
       <BottomNav />
     </div>
   );
@@ -20,38 +25,20 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 function TopBar() {
   return (
     <header className="sticky top-0 z-40 bg-white">
-      <div className="mx-auto max-w-3xl md:max-w-5xl px-5 sm:px-6 lg:px-10 h-16 flex items-center justify-between">
-        <Link
-          href="/discover"
-          className="font-extrabold text-2xl tracking-[-0.04em]"
-        >
+      <div className="mx-auto max-w-md px-5 h-16 flex items-center justify-between">
+        <Link href="/discover" className="font-extrabold text-2xl tracking-[-0.04em]">
           Hooked.
         </Link>
-        <nav className="hidden md:flex items-center gap-7 text-sm font-medium text-muted">
-          <DesktopLink href="/discover">Discover</DesktopLink>
-          <DesktopLink href="/hooks">Hooks</DesktopLink>
-          <DesktopLink href="/matches">Hooked</DesktopLink>
-          <DesktopLink href="/confessions">Confessions</DesktopLink>
-          <DesktopLink href="/me">Profile</DesktopLink>
-        </nav>
+        <Link
+          href="/me"
+          className="text-sm font-semibold underline-offset-4"
+          aria-label="Profile"
+        >
+          {/* compact menu indicator on the right */}
+          <span aria-hidden className="block text-2xl leading-none">·</span>
+        </Link>
       </div>
     </header>
-  );
-}
-
-function DesktopLink({ href, children }: { href: string; children: React.ReactNode }) {
-  const path = usePathname();
-  const active = path === href || path.startsWith(`${href}/`);
-  return (
-    <Link
-      href={href}
-      className={
-        "transition-colors " +
-        (active ? "text-ink" : "hover:text-ink")
-      }
-    >
-      {children}
-    </Link>
   );
 }
 
@@ -67,10 +54,10 @@ function BottomNav() {
   const path = usePathname();
   return (
     <nav
-      className="md:hidden fixed bottom-0 inset-x-0 bg-white z-30"
+      className="fixed bottom-0 inset-x-0 bg-white z-30"
       style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
     >
-      <div className="border-t border-hairline">
+      <div className="mx-auto max-w-md border-t border-hairline">
         <ul className="grid grid-cols-5">
           {TABS.map((t) => {
             const active = path === t.href || path.startsWith(`${t.href}/`);

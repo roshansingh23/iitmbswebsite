@@ -39,7 +39,7 @@ export default async function MePage() {
 
   return (
     <AppShell>
-      <div className="mx-auto max-w-md md:max-w-2xl px-4 sm:px-6 pt-6 pb-28">
+      <div className="px-4 pt-6 pb-12">
         <header className="flex flex-wrap items-baseline justify-between gap-4">
           <div>
             <h1 className="font-extrabold text-3xl tracking-[-0.04em]">{me.name ?? "—"}</h1>

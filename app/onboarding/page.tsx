@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { getSessionUser } from "@/lib/session";
 import { supabaseAdmin } from "@/lib/supabase-server";
+import { AppShell } from "@/components/app-shell";
 import { OnboardingFlow } from "./flow";
 
 export const dynamic = "force-dynamic";
@@ -21,25 +22,24 @@ export default async function OnboardingPage() {
   }
 
   return (
-    <div className="mx-auto max-w-2xl px-6 py-16">
-      <p className="eyebrow">Find your vibe</p>
-      <h1 className="display text-5xl mt-3">Set up your profile.</h1>
-      <p className="mt-4 text-muted text-sm max-w-md">
-        Three answers, a few photos, and how you want to be seen. Takes about five minutes.
-      </p>
-      <div className="mt-10">
-        <OnboardingFlow
-          initial={{
-            name: user.name ?? "",
-            age: user.age ?? null,
-            bio: user.bio ?? "",
-            gender: user.gender as any,
-            orientation: user.orientation as any,
-            showMe: user.showMe as any
-          }}
-          promptBank={prompts}
-        />
+    <AppShell>
+      <div className="px-5 pt-6 pb-12">
+        <h1 className="font-extrabold text-3xl tracking-[-0.04em]">Set up your profile.</h1>
+        <p className="mt-2 text-muted text-sm">Three answers, a few photos, and how you want to be seen.</p>
+        <div className="mt-8">
+          <OnboardingFlow
+            initial={{
+              name: user.name ?? "",
+              age: user.age ?? null,
+              bio: user.bio ?? "",
+              gender: user.gender as any,
+              orientation: user.orientation as any,
+              showMe: user.showMe as any
+            }}
+            promptBank={prompts}
+          />
+        </div>
       </div>
-    </div>
+    </AppShell>
   );
 }

@@ -50,7 +50,7 @@ export default async function ConfessionsPage({ searchParams }: { searchParams: 
 
   return (
     <AppShell>
-      <div className="mx-auto max-w-md md:max-w-2xl px-4 sm:px-6 pt-6 pb-28">
+      <div className="px-4 pt-6 pb-12">
         <h1 className="font-extrabold text-2xl tracking-[-0.04em]">Spill</h1>
         <p className="mt-2 text-muted text-sm">Anonymous. Author identity only visible to admins.</p>
 
