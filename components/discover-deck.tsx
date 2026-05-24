@@ -76,10 +76,10 @@ export function DiscoverDeck({ candidates }: { candidates: Candidate[] }) {
       </div>
 
       <div
-        className="fixed inset-x-0 lg:inset-x-auto lg:left-[440px] lg:w-[28rem] xl:left-auto xl:[left:calc(50%-14rem)] z-40 pointer-events-none lg:!bottom-6"
+        className="fixed inset-x-0 desktop:inset-x-auto desktop:left-[440px] desktop:w-[28rem] z-40 pointer-events-none desktop:!bottom-6"
         style={{ bottom: "calc(env(safe-area-inset-bottom) + 64px + 12px)" }}
       >
-        <div className="mx-auto lg:mx-0 max-w-md flex items-center justify-between px-6">
+        <div className="mx-auto desktop:mx-0 max-w-md flex items-center justify-between px-6">
           <button
             type="button"
             onClick={pass}

@@ -15,7 +15,7 @@ import { PushPermissionPrompt } from "@/components/push-permission-prompt";
 export function AppShell({ children }: { children: React.ReactNode }) {
   return (
     <div className="min-h-screen bg-white flex flex-col">
-      <main className="flex-1 mx-auto w-full max-w-md pb-24 md:pb-6 lg:mx-0 lg:ml-[440px] xl:mx-auto">
+      <main className="flex-1 mx-auto w-full max-w-md pb-24 desktop:pb-6 desktop:mx-0 desktop:ml-[440px]">
         {children}
       </main>
       <SideNav />
@@ -45,9 +45,10 @@ function SideNav() {
   const path = usePathname();
   return (
     <>
-      {/* Mobile bottom bar */}
+      {/* Mobile bottom bar — shown on every touch device (and any non-fine
+          pointer), regardless of viewport width. */}
       <nav
-        className="md:hidden fixed bottom-0 inset-x-0 z-30"
+        className="desktop:hidden fixed bottom-0 inset-x-0 z-30"
         style={{
           background: "#0a0a0a",
           paddingBottom: "env(safe-area-inset-bottom)"
@@ -77,9 +78,9 @@ function SideNav() {
         </div>
       </nav>
 
-      {/* Desktop floating vertical sidebar */}
+      {/* Desktop floating vertical sidebar — real desktops only */}
       <nav
-        className="hidden md:flex fixed top-1/2 -translate-y-1/2 left-5 z-30 flex-col gap-1 p-2 rounded-2xl"
+        className="hidden desktop:flex fixed top-1/2 -translate-y-1/2 left-5 z-30 flex-col gap-1 p-2 rounded-2xl"
         style={{
           background: "#0a0a0a",
           boxShadow: "0 8px 32px rgba(0,0,0,0.18)"

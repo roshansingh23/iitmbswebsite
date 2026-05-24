@@ -4,6 +4,13 @@ const config: Config = {
   content: ["./app/**/*.{ts,tsx}", "./components/**/*.{ts,tsx}"],
   theme: {
     extend: {
+      // "desktop" = genuinely a desktop: wide viewport AND a fine pointer
+      // (mouse). Touch devices keep the mobile layout even when the user
+      // (or an inherited PWA setting) forces "Desktop site", which would
+      // otherwise inflate the CSS viewport past the lg breakpoint.
+      screens: {
+        desktop: { raw: "(min-width: 1024px) and (pointer: fine)" }
+      },
       colors: {
         bone: "#FFFFFF",
         card: "#FFFFFF",

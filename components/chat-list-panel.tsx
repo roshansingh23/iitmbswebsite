@@ -39,7 +39,7 @@ export function ChatListPanel() {
 
   return (
     <aside
-      className="hidden lg:flex fixed top-5 bottom-5 left-24 w-72 z-20 flex-col bg-white border border-hairline rounded-2xl overflow-hidden"
+      className="hidden desktop:flex fixed top-5 bottom-5 left-24 w-72 z-20 flex-col bg-white border border-hairline rounded-2xl overflow-hidden"
       style={{ boxShadow: "0 4px 24px rgba(0,0,0,0.06)" }}
       aria-label="Chats"
     >
