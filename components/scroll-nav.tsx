@@ -62,13 +62,21 @@ export function ScrollNav() {
 
           <Link
             href="/"
-            className="justify-self-center font-extrabold text-xl md:text-2xl tracking-[-0.04em]"
+            className="justify-self-center font-extrabold text-2xl md:text-3xl tracking-[-0.04em]"
           >
             Hooked.
           </Link>
 
           <div className="justify-self-end">
-            <Link href="/login" className="btn-ink whitespace-nowrap">
+            <Link
+              href="/login"
+              className="inline-flex items-center justify-center gap-2 bg-ink text-white rounded-full font-semibold transition hover:opacity-90 whitespace-nowrap"
+              style={{
+                padding: "0.6rem 1.1rem",
+                fontSize: "0.72rem",
+                letterSpacing: "0.06em"
+              }}
+            >
               Join now
             </Link>
           </div>
