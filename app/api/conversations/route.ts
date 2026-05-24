@@ -13,14 +13,18 @@ export async function GET() {
   const admin = supabaseAdmin();
   if (!admin) return NextResponse.json({ error: "server misconfigured" }, { status: 503 });
 
+  // Only mutual matches: matchId is non-null exactly when both parties
+  // have hooked. Without this filter, conversations created on a one-
+  // sided hook would surface as "Chats" before the other side replied.
   const { data: convs } = await admin
     .from("Conversation")
     .select(
-      "id,userAId,userBId,updatedAt," +
+      "id,userAId,userBId,updatedAt,matchId," +
       "userA:User!Conversation_userAId_fkey(id,name)," +
       "userB:User!Conversation_userBId_fkey(id,name)"
     )
     .or(`userAId.eq.${me.id},userBId.eq.${me.id}`)
+    .not("matchId", "is", null)
     .order("updatedAt", { ascending: false })
     .limit(50);
 

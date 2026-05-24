@@ -14,7 +14,7 @@ import { ChatListPanel } from "@/components/chat-list-panel";
 export function AppShell({ children }: { children: React.ReactNode }) {
   return (
     <div className="min-h-screen bg-white flex flex-col">
-      <main className="flex-1 mx-auto w-full max-w-md pb-24 md:pb-12 lg:mx-0 lg:ml-[400px]">
+      <main className="flex-1 mx-auto w-full max-w-md pb-24 md:pb-6 lg:mx-0 lg:ml-[440px] xl:mx-auto">
         {children}
       </main>
       <SideNav />

@@ -225,8 +225,8 @@ export function ChatRoom({
   }
 
   return (
-    <>
-      <header className="fixed top-0 inset-x-0 lg:left-[400px] lg:right-0 z-40 bg-white border-b border-hairline">
+    <div className="lg:flex lg:flex-col lg:h-[calc(100vh-2.5rem)] lg:my-5 lg:bg-white lg:border lg:border-hairline lg:rounded-2xl lg:overflow-hidden lg:shadow-[0_4px_24px_rgba(0,0,0,0.06)]">
+      <header className="fixed top-0 inset-x-0 z-40 bg-white border-b border-hairline lg:static lg:z-auto lg:flex-shrink-0 lg:border-b-hairline">
         <div className="mx-auto lg:mx-0 max-w-md h-14 px-3 flex items-center gap-2">
           <Link href="/matches" aria-label="Back" className="p-2 -ml-2 text-ink active:scale-95 transition">
             <ArrowLeft size={22} strokeWidth={2} />
@@ -258,7 +258,7 @@ export function ChatRoom({
 
       <div
         ref={scroller}
-        className="overflow-y-auto"
+        className="overflow-y-auto lg:flex-1 lg:!pt-0 lg:!pb-0 lg:!min-h-0"
         style={{
           paddingTop: "56px",
           minHeight: `calc(100vh - 56px - 64px - ${NAV_HEIGHT_PX}px - env(safe-area-inset-bottom))`,
@@ -304,7 +304,7 @@ export function ChatRoom({
       </div>
 
       <div
-        className="fixed inset-x-0 lg:left-[400px] lg:right-0 lg:!bottom-0 z-30 bg-white border-t border-hairline"
+        className="fixed inset-x-0 z-30 bg-white border-t border-hairline lg:static lg:z-auto lg:flex-shrink-0"
         style={{ bottom: `calc(${NAV_HEIGHT_PX}px + env(safe-area-inset-bottom))` }}
       >
         <div className="mx-auto lg:mx-0 max-w-md px-4 py-3">
@@ -371,7 +371,7 @@ export function ChatRoom({
           onConfirm={reportMessage}
         />
       )}
-    </>
+    </div>
   );
 }
 
