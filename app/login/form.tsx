@@ -1,7 +1,7 @@
 "use client";
 
-import { useState } from "react";
-import { useSearchParams } from "next/navigation";
+import { useEffect, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { supabaseBrowser } from "@/lib/supabase-browser";
 
 const ERROR_MESSAGES: Record<string, string> = {
@@ -11,10 +11,25 @@ const ERROR_MESSAGES: Record<string, string> = {
 };
 
 export function LoginForm() {
+  const router = useRouter();
   const params = useSearchParams();
   const errorParam = params.get("error");
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
+  // Capture the URL error once into state so we can strip ?error= from
+  // the URL immediately — otherwise every reload re-shows it forever.
+  const [paramError, setParamError] = useState<string | null>(
+    errorParam ? (ERROR_MESSAGES[errorParam] ?? ERROR_MESSAGES.Default) : null
+  );
+
+  useEffect(() => {
+    if (!errorParam) return;
+    // Clear the query string right away (reload won't re-show), keep the
+    // message visible for a few seconds, then hide it.
+    router.replace("/login", { scroll: false });
+    const t = setTimeout(() => setParamError(null), 5000);
+    return () => clearTimeout(t);
+  }, [errorParam, router]);
 
   async function signInWithGoogle() {
     setBusy(true);
@@ -38,8 +53,7 @@ export function LoginForm() {
     }
   }
 
-  const inlineError = errorParam ? (ERROR_MESSAGES[errorParam] ?? ERROR_MESSAGES.Default) : null;
-  const error = message || inlineError;
+  const error = message || paramError;
 
   return (
     <>
