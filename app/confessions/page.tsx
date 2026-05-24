@@ -1,6 +1,5 @@
 import { redirect } from "next/navigation";
 import Link from "next/link";
-import { Quote } from "lucide-react";
 import { getSessionUser } from "@/lib/session";
 import { supabaseAdmin } from "@/lib/supabase-server";
 import { AppShell } from "@/components/app-shell";
@@ -104,12 +103,60 @@ function Chip({ href, label, active }: { href: string; label: string; active: bo
 
 function EmptyArtifact() {
   return (
-    <div className="mt-6 card-line p-8 flex flex-col items-center text-center bg-tint">
-      <div className="w-16 h-16 rounded-full bg-white border border-hairline flex items-center justify-center">
-        <Quote size={26} strokeWidth={1.75} className="text-ink" />
-      </div>
-      <p className="mt-5 font-semibold text-lg">Be the first to spill.</p>
+    <div className="mt-10 flex flex-col items-center text-center pb-8">
+      <NoteIllustration />
+      <p className="mt-8 font-extrabold text-2xl tracking-[-0.03em]">Nothing yet.</p>
+      <p className="mt-1.5 text-sm text-muted">First one is the bravest.</p>
     </div>
+  );
+}
+
+// Two stacked, slightly-rotated note papers with handwritten-style lines.
+// Custom illustration — keeps the monochrome palette and reads as
+// 'passing a note', which is what a confessions wall is.
+function NoteIllustration() {
+  return (
+    <svg
+      width="128"
+      height="128"
+      viewBox="0 0 128 128"
+      fill="none"
+      aria-hidden
+    >
+      {/* back paper */}
+      <g transform="rotate(9 64 64)">
+        <rect
+          x="32"
+          y="26"
+          width="64"
+          height="82"
+          rx="3"
+          fill="white"
+          stroke="#E4DFD4"
+          strokeWidth="1.25"
+        />
+        <line x1="42" y1="44" x2="84" y2="44" stroke="#E4DFD4" strokeWidth="1.25" strokeLinecap="round" />
+        <line x1="42" y1="56" x2="78" y2="56" stroke="#E4DFD4" strokeWidth="1.25" strokeLinecap="round" />
+        <line x1="42" y1="68" x2="82" y2="68" stroke="#E4DFD4" strokeWidth="1.25" strokeLinecap="round" />
+      </g>
+      {/* front paper */}
+      <g transform="rotate(-6 64 64)">
+        <rect
+          x="26"
+          y="20"
+          width="68"
+          height="84"
+          rx="3"
+          fill="white"
+          stroke="#1C1B19"
+          strokeWidth="1.5"
+        />
+        <line x1="36" y1="38" x2="84" y2="38" stroke="#1C1B19" strokeWidth="1.4" strokeLinecap="round" />
+        <line x1="36" y1="50" x2="78" y2="50" stroke="#1C1B19" strokeWidth="1.4" strokeLinecap="round" />
+        <line x1="36" y1="62" x2="82" y2="62" stroke="#1C1B19" strokeWidth="1.4" strokeLinecap="round" />
+        <line x1="36" y1="74" x2="64" y2="74" stroke="#1C1B19" strokeWidth="1.4" strokeLinecap="round" />
+      </g>
+    </svg>
   );
 }
 
