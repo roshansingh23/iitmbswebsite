@@ -41,9 +41,10 @@ export function ScrollNav() {
           "fixed top-0 inset-x-0 z-50 transition-colors duration-300 ease-out " + navBg
         }
       >
-        <div className="mx-auto max-w-7xl px-6 lg:px-10 h-20 grid grid-cols-3 items-center">
-          {/* Left slot: hamburger on mobile, "How it works" on desktop */}
-          <div className="justify-self-start flex items-center">
+        <div className="mx-auto max-w-7xl px-6 lg:px-10 h-20 flex items-center md:grid md:grid-cols-3">
+          {/* Mobile: hamburger + brand inline on the left. Desktop: "How
+              it works" link on the left, brand centered. */}
+          <div className="flex items-center gap-2 md:justify-self-start">
             <button
               type="button"
               onClick={() => setMenuOpen(true)}
@@ -52,6 +53,12 @@ export function ScrollNav() {
             >
               <HamburgerIcon />
             </button>
+            <Link
+              href="/"
+              className="md:hidden font-extrabold text-2xl tracking-[-0.045em]"
+            >
+              Mismatched.
+            </Link>
             <Link
               href="#how"
               className="hidden md:inline text-sm font-medium hover:opacity-70 transition-opacity"
@@ -62,12 +69,12 @@ export function ScrollNav() {
 
           <Link
             href="/"
-            className="justify-self-center font-extrabold text-2xl md:text-3xl tracking-[-0.04em]"
+            className="hidden md:block md:justify-self-center font-extrabold text-3xl tracking-[-0.04em]"
           >
             Mismatched.
           </Link>
 
-          <div className="justify-self-end">
+          <div className="ml-auto md:ml-0 md:justify-self-end">
             <Link
               href="/login"
               className="inline-flex items-center justify-center gap-2 bg-ink text-white rounded-full font-semibold transition hover:opacity-90 whitespace-nowrap"
