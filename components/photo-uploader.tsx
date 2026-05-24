@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Image from "next/image";
+import { supabaseBrowser } from "@/lib/supabase-browser";
 
 type Photo = { url: string; publicId: string };
 
@@ -19,7 +20,21 @@ export function PhotoUploader({
     setBusy(true);
     setErr(null);
     try {
-      const sig = await fetch("/api/uploads/signature", { method: "POST" }).then((r) => r.json());
+      // Get a signed Cloudinary upload payload from the Supabase Edge Function.
+      // Credentials never touch Vercel env or the browser — they live in the
+      // function's own secrets store.
+      const supabase = supabaseBrowser();
+      const { data: sig, error: sigErr } = await supabase.functions.invoke<{
+        timestamp: number;
+        folder: string;
+        signature: string;
+        apiKey: string;
+        cloudName: string;
+        error?: string;
+      }>("cloudinary-signature");
+
+      if (sigErr) throw sigErr;
+      if (!sig) throw new Error("No signature returned");
       if (sig.error) throw new Error(sig.error);
 
       const fd = new FormData();
@@ -30,7 +45,8 @@ export function PhotoUploader({
       fd.append("folder", sig.folder);
 
       const res = await fetch(`https://api.cloudinary.com/v1_1/${sig.cloudName}/image/upload`, {
-        method: "POST", body: fd
+        method: "POST",
+        body: fd
       });
       const data = await res.json();
       if (!data.secure_url) throw new Error(data.error?.message ?? "Upload failed");
@@ -43,8 +59,7 @@ export function PhotoUploader({
   }
 
   function removeAt(i: number) {
-    const next = value.filter((_, j) => j !== i);
-    onChange(next);
+    onChange(value.filter((_, j) => j !== i));
   }
 
   return (
