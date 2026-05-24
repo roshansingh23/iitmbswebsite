@@ -146,10 +146,10 @@ export function ScrollNav() {
             <DrawerLink href="#how" onClick={() => setMenuOpen(false)}>
               How it works
             </DrawerLink>
-            <DrawerLink href="#prompts" onClick={() => setMenuOpen(false)}>
-              Prompts
+            <DrawerLink href="/language" onClick={() => setMenuOpen(false)}>
+              Language
             </DrawerLink>
-            <DrawerLink href="#voices" onClick={() => setMenuOpen(false)}>
+            <DrawerLink href="/voices" onClick={() => setMenuOpen(false)}>
               Voices
             </DrawerLink>
             <DrawerLink href="/login" onClick={() => setMenuOpen(false)}>
