@@ -106,7 +106,6 @@ function EmptyArtifact() {
     <div className="mt-10 flex flex-col items-center text-center pb-8">
       <SpilledTea />
       <p className="mt-6 font-extrabold text-2xl tracking-[-0.03em]">No tea yet.</p>
-      <p className="mt-1.5 text-sm text-muted">Spill the first one.</p>
     </div>
   );
 }
