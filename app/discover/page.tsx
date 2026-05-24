@@ -17,41 +17,44 @@ export default async function DiscoverPage() {
 
   const wantGenders = gendersIWant(me.orientation, me.gender, me.showMe);
 
-  // Filter the discovery feed:
-  //  - Not me, not paused
-  //  - Their gender ∈ what I want to see (showMe / orientation)
-  //  - I am also in what *they* want to see (raw filter)
-  //  - Not already hooked / blocked
-  const blocked = await db.block.findMany({
-    where: { OR: [{ fromUserId: me.id }, { toUserId: me.id }] },
-    select: { fromUserId: true, toUserId: true }
-  });
-  const blockIds = new Set([
-    ...blocked.map((b) => b.fromUserId),
-    ...blocked.map((b) => b.toUserId)
-  ]);
-  blockIds.delete(me.id);
+  // DB-driven filtering — wrap so a broken connection doesn't 500 the page.
+  let candidates: any[] = [];
+  let dbError = false;
+  try {
+    const blocked = await db.block.findMany({
+      where: { OR: [{ fromUserId: me.id }, { toUserId: me.id }] },
+      select: { fromUserId: true, toUserId: true }
+    });
+    const blockIds = new Set([
+      ...blocked.map((b) => b.fromUserId),
+      ...blocked.map((b) => b.toUserId)
+    ]);
+    blockIds.delete(me.id);
 
-  const candidates = await db.user.findMany({
-    where: {
-      id: { not: me.id, notIn: Array.from(blockIds) },
-      paused: false,
-      gender: { in: wantGenders },
-      showMe: { has: me.gender }, // I appear to them
-      photos: { some: {} },
-      userPrompts: { some: {} }
-    },
-    include: {
-      photos: { orderBy: { position: "asc" }, take: 1 },
-      userPrompts: { include: { prompt: true }, orderBy: { position: "asc" }, take: 1 }
-    },
-    orderBy: [
-      { foundingMember: "desc" },
-      { lastSeenAt: "desc" },
-      { createdAt: "desc" }
-    ],
-    take: 24
-  });
+    candidates = await db.user.findMany({
+      where: {
+        id: { not: me.id, notIn: Array.from(blockIds) },
+        paused: false,
+        gender: { in: wantGenders },
+        showMe: { has: me.gender },
+        photos: { some: {} },
+        userPrompts: { some: {} }
+      },
+      include: {
+        photos: { orderBy: { position: "asc" }, take: 1 },
+        userPrompts: { include: { prompt: true }, orderBy: { position: "asc" }, take: 1 }
+      },
+      orderBy: [
+        { foundingMember: "desc" },
+        { lastSeenAt: "desc" },
+        { createdAt: "desc" }
+      ],
+      take: 24
+    });
+  } catch (e) {
+    console.error("discover query failed:", e);
+    dbError = true;
+  }
 
   return (
     <AppShell>
@@ -59,9 +62,17 @@ export default async function DiscoverPage() {
         <p className="eyebrow">People you vibe with</p>
         <h1 className="display text-5xl mt-3">For you, this week.</h1>
 
-        {candidates.length === 0 ? (
+        {dbError ? (
           <div className="mt-14 card-line p-10">
-            <p className="serif italic text-2xl">No fresh faces today.</p>
+            <p className="display text-2xl">Couldn't load profiles.</p>
+            <p className="mt-3 text-muted text-sm">
+              Refresh in a moment. If it keeps failing, the deployment's database
+              connection is misconfigured.
+            </p>
+          </div>
+        ) : candidates.length === 0 ? (
+          <div className="mt-14 card-line p-10">
+            <p className="display text-2xl">No fresh faces today.</p>
             <p className="mt-3 text-muted text-sm">Come back tomorrow — we shuffle the deck daily.</p>
           </div>
         ) : (
