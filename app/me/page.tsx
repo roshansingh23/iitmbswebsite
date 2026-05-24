@@ -1,7 +1,10 @@
 import Link from "next/link";
+import Image from "next/image";
 import { redirect } from "next/navigation";
+import { BadgeCheck, Pencil, User as UserIcon } from "lucide-react";
 import { getSessionUser } from "@/lib/session";
 import { supabaseAdmin } from "@/lib/supabase-server";
+import { thumb } from "@/lib/cloudinary-thumb";
 import { AppShell } from "@/components/app-shell";
 import { PhotoManager, type Photo } from "@/components/photo-manager";
 import { PromptBlock } from "@/components/prompt-block";
@@ -37,27 +40,89 @@ export default async function MePage() {
   const needsOnboarding =
     !me.gender || !me.orientation || me.showMe.length === 0 || photos.length === 0;
 
+  // Profile completion %: photos (40%) + prompts (40%) + the bio/location/
+  // intentions/relationshipType/height key fields (20%).
+  const filledFields = [me.bio, me.location, me.intentions, me.relationshipType, me.height]
+    .filter(Boolean).length;
+  const completionPct = Math.round(
+    ((Math.min(photos.length, 5) / 5) * 0.4 +
+     (Math.min(userPrompts.length, 3) / 3) * 0.4 +
+     (filledFields / 5) * 0.2) * 100
+  );
+  const avatar = photos[0]?.url ?? null;
+
   return (
     <AppShell>
       <div className="px-4 pt-6 pb-12">
-        <header className="flex flex-wrap items-baseline justify-between gap-4">
-          <div>
-            <h1 className="font-extrabold text-3xl tracking-[-0.04em]">{me.name ?? "—"}</h1>
-            <p className="mt-1 text-muted text-sm">{me.age ?? "—"}</p>
-          </div>
-          <div className="flex flex-wrap gap-2">
-            {me.verified && <Badge>Verified</Badge>}
-            {me.foundingMember && <Badge>Founding</Badge>}
-            <Badge>{me.accessTier}</Badge>
-          </div>
-        </header>
+        <section className="flex flex-col items-center text-center">
+          <div className="relative">
+            <div className="w-32 h-32 rounded-full overflow-hidden bg-tint border border-hairline relative">
+              {avatar ? (
+                <Image
+                  src={thumb(avatar, 300)}
+                  alt=""
+                  fill
+                  sizes="128px"
+                  className="object-cover"
+                />
+              ) : (
+                <div className="absolute inset-0 flex items-center justify-center text-ink/40">
+                  <UserIcon size={56} strokeWidth={1.5} />
+                </div>
+              )}
+            </div>
 
-        {needsOnboarding && (
-          <div className="mt-6 card-line p-5">
-            <p className="font-semibold">Finish setting up to start matching.</p>
-            <Link href="/onboarding" className="btn-ink mt-4 inline-flex">Continue setup</Link>
+            <Link
+              href="/onboarding"
+              aria-label="Edit profile"
+              className="absolute top-0 right-0 w-9 h-9 rounded-full bg-white border border-hairline flex items-center justify-center active:scale-95 transition-transform duration-100"
+              style={{
+                boxShadow: "0 1px 4px rgba(0,0,0,0.08)",
+                touchAction: "manipulation"
+              }}
+            >
+              <Pencil size={15} strokeWidth={2} className="text-ink" />
+            </Link>
+
+            {completionPct < 100 && (
+              <div
+                className="absolute -bottom-1 left-1/2 -translate-x-1/2 bg-ink text-white rounded-full px-2.5 py-0.5 text-[0.7rem] font-semibold tracking-tight"
+                style={{ boxShadow: "0 1px 4px rgba(0,0,0,0.15)" }}
+              >
+                {completionPct}%
+              </div>
+            )}
           </div>
-        )}
+
+          <div className="mt-5 flex items-center gap-1.5">
+            <h1 className="font-extrabold text-3xl tracking-[-0.03em]">{me.name ?? "—"}</h1>
+            {me.verified && (
+              <BadgeCheck
+                size={22}
+                strokeWidth={2}
+                style={{ color: "#D43A2F", fill: "transparent" }}
+                aria-label="Verified"
+              />
+            )}
+          </div>
+
+          <p className="mt-1 text-sm text-muted">
+            {needsOnboarding ? "Incomplete profile" : "Profile complete"}
+          </p>
+
+          {needsOnboarding && (
+            <Link href="/onboarding" className="btn-ink mt-5 inline-flex">
+              Continue setup
+            </Link>
+          )}
+
+          {(me.foundingMember || me.accessTier !== "free") && (
+            <div className="mt-4 flex flex-wrap justify-center gap-2">
+              {me.foundingMember && <Badge>Founding</Badge>}
+              {me.accessTier !== "free" && <Badge>{me.accessTier}</Badge>}
+            </div>
+          )}
+        </section>
 
         <section className="mt-10">
           <header className="flex items-baseline justify-between mb-4">
