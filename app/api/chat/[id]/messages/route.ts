@@ -48,7 +48,22 @@ export async function GET(req: Request, { params }: { params: { id: string } }) 
     const { data: anchor } = await admin.from("Message").select("createdAt").eq("id", after).maybeSingle();
     if (anchor) q = q.gt("createdAt", (anchor as any).createdAt);
   }
-  const { data: messages } = await q;
+  let { data: messages, error: msgErr } = await q;
+  if (msgErr) {
+    // Photo columns not in DB yet — re-issue the query with legacy cols.
+    console.error("messages GET with photo cols failed, falling back:", msgErr.message);
+    let q2 = admin.from("Message")
+      .select("id,body,fromUserId,createdAt")
+      .eq("conversationId", params.id)
+      .order("createdAt", { ascending: true })
+      .limit(100);
+    if (after) {
+      const { data: anchor } = await admin.from("Message").select("createdAt").eq("id", after).maybeSingle();
+      if (anchor) q2 = q2.gt("createdAt", (anchor as any).createdAt);
+    }
+    const fb = await q2;
+    messages = fb.data;
+  }
   return NextResponse.json({
     messages: (messages ?? []).map((m: any) => ({
       id: m.id,

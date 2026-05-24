@@ -51,6 +51,12 @@ export function ChatRoom({
   const [reportMsgId, setReportMsgId] = useState<string | null>(null);
   const scroller = useRef<HTMLDivElement>(null);
   const fileInput = useRef<HTMLInputElement>(null);
+  // Synchronous re-entry guard. React state for `sending` doesn't flip
+  // until next render, so rapid Enter / double-click can fire send()
+  // twice before `sending` becomes true. The ref blocks that.
+  const sendingRef = useRef(false);
+  const msgsRef = useRef(msgs);
+  useEffect(() => { msgsRef.current = msgs; }, [msgs]);
 
   useEffect(() => {
     scroller.current?.scrollTo({ top: scroller.current.scrollHeight, behavior: "smooth" });
@@ -73,11 +79,20 @@ export function ChatRoom({
       async function poll() {
         if (stopped) return;
         if (document.visibilityState === "visible") {
-          const last = msgs[msgs.length - 1]?.id ?? "";
+          // Read latest msgs through the ref so this effect doesn't need
+          // `msgs` in its dep array.
+          const cur = msgsRef.current;
+          const last = cur[cur.length - 1]?.id ?? "";
           const res = await fetch(`/api/chat/${conversationId}/messages?after=${last}`);
           if (res.ok) {
             const data = await res.json();
-            if (data.messages?.length) setMsgs((m) => [...m, ...data.messages]);
+            if (data.messages?.length) {
+              setMsgs((m) => {
+                const have = new Set(m.map((x) => x.id));
+                const incoming = data.messages.filter((x: Msg) => !have.has(x.id));
+                return incoming.length ? [...m, ...incoming] : m;
+              });
+            }
           }
         }
         setTimeout(poll, 4000);
@@ -106,19 +121,25 @@ export function ChatRoom({
     });
     channel.subscribe();
     return () => { channel.unsubscribe(); };
-  }, [conversationId, msgs]);
+    // Crucially DO NOT depend on `msgs` here — that caused the channel
+    // to tear down + re-subscribe on every send, briefly running two
+    // subscriptions and replaying the broadcast as a duplicate.
+  }, [conversationId, meId]);
 
   async function send() {
     const text = body.trim();
-    if (!text || sending || locked) return;
-    const tempId = `temp-${Date.now()}`;
+    if (!text || sendingRef.current || locked) return;
+    sendingRef.current = true;
+    setSending(true);
+
+    const tempId = `temp-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
     const optimistic: Msg = {
       id: tempId, body: text, fromUserId: meId,
       createdAt: new Date().toISOString(), messageType: "text"
     };
     setBody("");
     setMsgs((m) => [...m, optimistic]);
-    setSending(true);
+
     try {
       const res = await fetch(`/api/chat/${conversationId}/messages`, {
         method: "POST",
@@ -132,10 +153,18 @@ export function ChatRoom({
         return;
       }
       const data = await res.json();
-      setMsgs((m) => m.map((x) => (x.id === tempId ? data.message : x)));
+      // Replace temp with real. If a race had already added the real id
+      // (e.g. via a stale subscription), drop the duplicate.
+      setMsgs((m) => {
+        const already = m.some((x) => x.id === data.message.id);
+        const next = m.map((x) => (x.id === tempId ? data.message : x));
+        if (!already) return next;
+        return next.filter((x, i, arr) => arr.findIndex((y) => y.id === x.id) === i);
+      });
     } catch {
       setMsgs((m) => m.filter((x) => x.id !== tempId));
     } finally {
+      sendingRef.current = false;
       setSending(false);
     }
   }
