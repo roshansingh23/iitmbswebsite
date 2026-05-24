@@ -247,7 +247,7 @@ function SiteFooter() {
           </p>
           <ul className="space-y-2 text-sm">
             <li><Link href="/login" className="hover:text-white/70 transition">Sign in</Link></li>
-            <li><Link href="/login" className="hover:text-white/70 transition">Get the app</Link></li>
+            <li><Link href="/login" className="hover:text-white/70 transition">Join now</Link></li>
           </ul>
         </div>
 
