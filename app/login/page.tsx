@@ -35,11 +35,6 @@ export default async function LoginPage() {
       <main className="relative z-10 min-h-screen flex flex-col items-center justify-end text-center px-8 pb-20">
         <div className="w-full max-w-sm">
           <h1 className="font-extrabold text-5xl tracking-[-0.05em] text-white">Mismatched.</h1>
-          <p className="mt-4 text-white/85 text-[0.95rem] leading-relaxed">
-            Where prompts beat poses and conversations turn into real dates.
-            Say something that matters — and meet someone worth putting your
-            phone down for.
-          </p>
 
           <Suspense fallback={<div className="mt-8 text-sm text-white/70">Loading…</div>}>
             <LoginForm />
