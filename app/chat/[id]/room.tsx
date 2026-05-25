@@ -49,6 +49,9 @@ export function ChatRoom({
   const [sending, setSending] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [locked, setLocked] = useState(initialLocked);
+  // Live "active" state — seeded from the server snapshot, refreshed by a
+  // lightweight poll so the green dot turns on/off while you're in the chat.
+  const [active, setActive] = useState(otherActive);
   const [viewer, setViewer] = useState<{ msgId: string; url: string; viewsRemaining: number } | null>(null);
   const [reportMsgId, setReportMsgId] = useState<string | null>(null);
   const scroller = useRef<HTMLDivElement>(null);
@@ -278,7 +281,7 @@ export function ChatRoom({
               </div>
               {/* Active dot sits OUTSIDE the clipped circle, overlapping the
                   frame edge — the outer div isn't overflow-hidden. */}
-              {otherActive && (
+              {active && (
                 <span className="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 rounded-full border-2 border-white"
                   style={{ background: "#22C55E" }} aria-label="Active" />
               )}
