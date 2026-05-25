@@ -270,12 +270,16 @@ export function ChatRoom({
             href={`/profile/${otherUserId}`}
             className="flex-1 flex items-center gap-3 min-w-0 active:opacity-70 transition"
           >
-            <div className="relative w-9 h-9 rounded-full overflow-hidden bg-tint shrink-0">
-              {otherPhoto && (
-                <Image src={thumb(otherPhoto, 100)} alt="" fill className="object-cover" sizes="36px" />
-              )}
+            <div className="relative shrink-0">
+              <div className="w-9 h-9 rounded-full overflow-hidden bg-tint">
+                {otherPhoto && (
+                  <Image src={thumb(otherPhoto, 100)} alt="" fill className="object-cover" sizes="36px" />
+                )}
+              </div>
+              {/* Active dot sits OUTSIDE the clipped circle, overlapping the
+                  frame edge — the outer div isn't overflow-hidden. */}
               {otherActive && (
-                <span className="absolute bottom-0 right-0 w-3 h-3 rounded-full border-2 border-white"
+                <span className="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 rounded-full border-2 border-white"
                   style={{ background: "#22C55E" }} aria-label="Active" />
               )}
             </div>
