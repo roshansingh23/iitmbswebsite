@@ -72,9 +72,20 @@ export function ChatRoom({
       if (document.visibilityState !== "visible") return;
       fetch(`/api/chat/${conversationId}/heartbeat`, { method: "POST" }).catch(() => {});
     }
+    async function checkPresence() {
+      if (document.visibilityState !== "visible") return;
+      try {
+        const res = await fetch(`/api/chat/${conversationId}/presence`);
+        if (res.ok) { const d = await res.json(); setActive(!!d.active); }
+      } catch {}
+    }
     ping();
+    checkPresence();
+    // 5-min heartbeat (write) keeps my lastSeenAt fresh; 60s presence poll
+    // (read) keeps the other person's green dot live while we're in chat.
     const t = setInterval(ping, 5 * 60_000);
-    return () => clearInterval(t);
+    const p = setInterval(checkPresence, 60_000);
+    return () => { clearInterval(t); clearInterval(p); };
   }, [conversationId]);
 
   useEffect(() => {
