@@ -21,7 +21,7 @@ export default function PrivacyPage() {
           Email us. We hard-delete your photos and prompt answers within seven days; anonymised aggregate metrics may be retained for safety analysis.
         </Section>
         <Section title="Contact">
-          privacy@hooked.example
+          privacy@mismatched.space
         </Section>
       </div>
     </article>

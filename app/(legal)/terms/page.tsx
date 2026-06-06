@@ -21,10 +21,10 @@ export default function TermsPage() {
           Block and report are always free. If something on the app feels unsafe, tell us. We will act.
         </Section>
         <Section title="Termination">
-          We may suspend or remove accounts that violate these terms. You may delete your account at any time by emailing privacy@hooked.example.
+          We may suspend or remove accounts that violate these terms. You may delete your account at any time by emailing privacy@mismatched.space.
         </Section>
         <Section title="Contact">
-          legal@hooked.example
+          legal@mismatched.space
         </Section>
       </div>
     </article>

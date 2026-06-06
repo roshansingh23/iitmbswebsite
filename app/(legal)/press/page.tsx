@@ -11,7 +11,7 @@ export default function PressPage() {
         We respond to all serious press requests. Send a short note about
         what you're working on and your deadline.
       </p>
-      <a href="mailto:press@hooked.example" className="btn-ink mt-10">press@hooked.example</a>
+      <a href="mailto:press@mismatched.space" className="btn-ink mt-10">press@mismatched.space</a>
       <Link href="/" className="btn-quiet mt-10 ml-6 inline-flex">Back home</Link>
     </article>
   );

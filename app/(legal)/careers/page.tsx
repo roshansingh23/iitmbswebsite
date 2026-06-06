@@ -19,13 +19,13 @@ export default function CareersPage() {
               <h2 className="display text-2xl">{r.role}</h2>
               <p className="text-sm text-muted mt-1">{r.where}</p>
             </div>
-            <a href="mailto:careers@hooked.example" className="btn-line">Apply</a>
+            <a href="mailto:careers@mismatched.space" className="btn-line">Apply</a>
           </li>
         ))}
       </ul>
 
       <p className="mt-16 text-sm text-muted">
-        Don't see your role? Write to us at careers@hooked.example anyway.
+        Don't see your role? Write to us at careers@mismatched.space anyway.
       </p>
       <Link href="/" className="btn-quiet mt-10 inline-flex">Back home</Link>
     </article>
