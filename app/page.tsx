@@ -2,7 +2,6 @@ import Image from "next/image";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { ScrollNav } from "@/components/scroll-nav";
-import { DateSpots } from "@/components/date-spots";
 import { DownloadBanner } from "@/components/download-banner";
 import { supabaseServer } from "@/lib/supabase-server";
 
@@ -31,7 +30,6 @@ export default async function Landing() {
         <Statement />
         <LabsBlock />
         <DarkTestimonial />
-        <DateSpots />
       </main>
       <SiteFooter />
       <DownloadBanner />
