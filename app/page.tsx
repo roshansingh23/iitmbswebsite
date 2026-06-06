@@ -116,12 +116,12 @@ function Statement() {
             }}
             className="mt-10 text-[3rem] sm:text-[4.5rem] md:text-[6rem] lg:text-[7rem]"
           >
-            Stay{" "}
+            Your person is{" "}
             <span className="inline-block relative">
-              long
+              already
               <CircleAnnotation />
             </span>{" "}
-            enough <br/> to mean it.
+            <br/> on campus.
           </h2>
 
           <div className="mt-14">
