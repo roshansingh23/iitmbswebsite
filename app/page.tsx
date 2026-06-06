@@ -194,7 +194,18 @@ function LabsBlock() {
       <div className="mx-auto max-w-7xl px-6 lg:px-10 py-24 md:py-32">
         <div className="grid md:grid-cols-12 gap-10 md:gap-16 items-center">
           <div className="md:col-span-6">
-            <Frame aspect="4/3" label="Studio" />
+            <div
+              className="relative overflow-hidden rounded-[4px] border border-hairline"
+              style={{ aspectRatio: "4/3", boxShadow: "0 1px 3px rgba(0,0,0,0.06)" }}
+            >
+              <Image
+                src="/home/first-message.jpg"
+                alt="Two people laughing at a phone together on a park bench"
+                fill
+                sizes="(min-width:768px) 560px, 90vw"
+                className="object-cover"
+              />
+            </div>
           </div>
           <div className="md:col-span-6">
             <p className="eyebrow">Inside Mismatched.</p>
