@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { supabaseBrowser } from "@/lib/supabase-browser";
+import { signIn } from "next-auth/react";
 
 const ERROR_MESSAGES: Record<string, string> = {
   AccessDenied: "Only IITM student email allowed.",
@@ -35,18 +35,10 @@ export function LoginForm() {
     setBusy(true);
     setMessage(null);
     try {
-      const supabase = supabaseBrowser();
-      const { error } = await supabase.auth.signInWithOAuth({
-        provider: "google",
-        options: {
-          redirectTo: `${window.location.origin}/auth/callback?next=/discover`
-        }
-      });
-      if (error) {
-        setMessage(error.message);
-        setBusy(false);
-      }
-      // Otherwise the browser is being redirected to Google; nothing else to do.
+      // Auth.js handshake on our own domain. On success it lands on
+      // /discover; a blocked (non-IITM) email comes back to
+      // /login?error=AccessDenied, handled below.
+      await signIn("google", { callbackUrl: "/discover" });
     } catch (e: any) {
       setMessage(e?.message ?? "Couldn't start sign-in.");
       setBusy(false);

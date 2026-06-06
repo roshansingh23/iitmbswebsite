@@ -3,7 +3,8 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { ScrollNav } from "@/components/scroll-nav";
 import { DownloadBanner } from "@/components/download-banner";
-import { supabaseServer } from "@/lib/supabase-server";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth";
 
 export const dynamic = "force-dynamic";
 
@@ -16,9 +17,8 @@ export default async function Landing() {
   // outside the try so its internal throw isn't swallowed.
   let authed = false;
   try {
-    const supabase = supabaseServer();
-    const { data: { user } } = await supabase.auth.getUser();
-    authed = !!user;
+    const session = await getServerSession(authOptions);
+    authed = !!session?.user?.email;
   } catch {}
   if (authed) redirect("/discover");
 

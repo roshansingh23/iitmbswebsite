@@ -1,5 +1,7 @@
 import { NextResponse } from "next/server";
-import { supabaseServer, supabaseAdmin } from "@/lib/supabase-server";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth";
+import { supabaseAdmin } from "@/lib/supabase-server";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -7,8 +9,11 @@ export const dynamic = "force-dynamic";
 export async function GET() {
   const env = {
     NEXT_PUBLIC_SUPABASE_URL: !!process.env.NEXT_PUBLIC_SUPABASE_URL,
-    NEXT_PUBLIC_SUPABASE_ANON_KEY: !!process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
     SUPABASE_SERVICE_ROLE_KEY: !!process.env.SUPABASE_SERVICE_ROLE_KEY,
+    GOOGLE_CLIENT_ID: !!process.env.GOOGLE_CLIENT_ID,
+    GOOGLE_CLIENT_SECRET: !!process.env.GOOGLE_CLIENT_SECRET,
+    NEXTAUTH_SECRET: !!process.env.NEXTAUTH_SECRET,
+    NEXTAUTH_URL: !!process.env.NEXTAUTH_URL,
     ALLOWED_EMAIL_DOMAINS: !!process.env.ALLOWED_EMAIL_DOMAINS
   };
 
@@ -28,37 +33,31 @@ export async function GET() {
     }
   }
 
-  // Auth (cookie session) check.
-  let supabase_session: null | { email: string | null } = null;
-  let supabase_error: string | null = null;
+  // Auth.js session check.
+  let session_email: string | null = null;
   try {
-    const supabase = supabaseServer();
-    const { data: { user } } = await supabase.auth.getUser();
-    if (user) supabase_session = { email: user.email ?? null };
-  } catch (e: any) {
-    supabase_error = String(e?.message ?? e).slice(0, 200);
-  }
+    const session = await getServerSession(authOptions);
+    session_email = session?.user?.email ?? null;
+  } catch {}
 
   const issues: string[] = [];
   if (!env.NEXT_PUBLIC_SUPABASE_URL) issues.push("Set NEXT_PUBLIC_SUPABASE_URL on Vercel.");
-  if (!env.NEXT_PUBLIC_SUPABASE_ANON_KEY) issues.push("Set NEXT_PUBLIC_SUPABASE_ANON_KEY on Vercel.");
   if (!env.SUPABASE_SERVICE_ROLE_KEY) {
-    issues.push("Set SUPABASE_SERVICE_ROLE_KEY on Vercel — this is the new DB access path (no Postgres password needed).");
+    issues.push("Set SUPABASE_SERVICE_ROLE_KEY on Vercel — DB access path.");
   } else if (!db_reachable) {
     issues.push(`DB unreachable through service_role: ${db_error}`);
   }
-
-  const auth_ok = !!supabase_session?.email;
+  if (!env.GOOGLE_CLIENT_ID || !env.GOOGLE_CLIENT_SECRET) issues.push("Set GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET on Vercel.");
+  if (!env.NEXTAUTH_SECRET) issues.push("Set NEXTAUTH_SECRET on Vercel (openssl rand -base64 32).");
+  if (!env.NEXTAUTH_URL) issues.push("Set NEXTAUTH_URL to your custom domain (https://...).");
 
   return NextResponse.json({
     env,
-    auth_ok,
     db_reachable,
     user_count,
     db_error,
-    supabase_session,
-    supabase_error,
+    session_email,
     issues,
-    ok: db_reachable && env.SUPABASE_SERVICE_ROLE_KEY && auth_ok
+    ok: db_reachable && env.SUPABASE_SERVICE_ROLE_KEY && env.GOOGLE_CLIENT_ID && env.NEXTAUTH_SECRET
   });
 }

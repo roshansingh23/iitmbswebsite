@@ -1,4 +1,6 @@
-import { supabaseServer, supabaseAdmin } from "./supabase-server";
+import { getServerSession } from "next-auth";
+import { authOptions } from "./auth";
+import { supabaseAdmin } from "./supabase-server";
 import { randomQrCode } from "./qr";
 
 export type Profile = {
@@ -35,9 +37,13 @@ const LAST_SEEN_DEBOUNCE_MS = 5 * 60 * 1000;
 
 export async function getSessionUser(): Promise<Profile | null> {
   try {
-    const supabase = supabaseServer();
-    const { data: { user: authUser } } = await supabase.auth.getUser();
-    if (!authUser?.email) return null;
+    // Identity now comes from the Auth.js (NextAuth) JWT session — the OAuth
+    // handshake runs on our own domain, not supabase.co. Supabase is used
+    // only as the data store below, via the service-role key.
+    const session = await getServerSession(authOptions);
+    const email = session?.user?.email ?? null;
+    if (!email) return null;
+    const authSub = (session?.user as any)?.sub ?? null;
 
     const admin = supabaseAdmin();
     if (!admin) {
@@ -45,10 +51,12 @@ export async function getSessionUser(): Promise<Profile | null> {
       return null;
     }
 
+    // Match on email so existing users (created under Supabase Auth) keep
+    // their id and all their data after the auth migration.
     const { data: existing } = await admin
       .from("User")
       .select("*")
-      .eq("authId", authUser.id)
+      .eq("email", email)
       .maybeSingle();
 
     if (existing) {
@@ -56,19 +64,15 @@ export async function getSessionUser(): Promise<Profile | null> {
       return normalize(existing);
     }
 
-    const meta = (authUser.user_metadata ?? {}) as Record<string, unknown>;
-    const name =
-      (meta.full_name as string | undefined) ??
-      (meta.name as string | undefined) ??
-      null;
+    const name = session?.user?.name ?? null;
     const id = "c" + Math.random().toString(36).slice(2, 14) + Math.random().toString(36).slice(2, 14);
     const now = new Date().toISOString();
     const { data: created, error } = await admin
       .from("User")
       .insert({
         id,
-        authId: authUser.id,
-        email: authUser.email,
+        authId: authSub ?? id,
+        email,
         name,
         qrCode: randomQrCode(),
         showMe: [],
@@ -86,7 +90,7 @@ export async function getSessionUser(): Promise<Profile | null> {
       const { data: refetched } = await admin
         .from("User")
         .select("*")
-        .or(`authId.eq.${authUser.id},email.eq.${authUser.email}`)
+        .eq("email", email)
         .maybeSingle();
       return refetched ? normalize(refetched) : null;
     }

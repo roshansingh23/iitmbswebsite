@@ -1,4 +1,4 @@
-import { createServerClient } from "@supabase/ssr";
+import { getToken } from "next-auth/jwt";
 import { NextResponse, type NextRequest } from "next/server";
 
 const PROTECTED_PREFIXES = [
@@ -7,52 +7,24 @@ const PROTECTED_PREFIXES = [
 ];
 
 export async function middleware(request: NextRequest) {
-  let response = NextResponse.next({ request });
-
-  // No Supabase env? Let the request through; pages will surface the
-  // configuration issue themselves.
-  if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
-    return response;
-  }
-
-  // Following the @supabase/ssr v0.10+ pattern: getAll + setAll, and always
-  // re-create the response after writing cookies so the new Set-Cookie
-  // headers make it into the final response.
-  const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
-    {
-      cookies: {
-        getAll() {
-          return request.cookies.getAll();
-        },
-        setAll(cookiesToSet) {
-          cookiesToSet.forEach(({ name, value }) => {
-            request.cookies.set(name, value);
-          });
-          response = NextResponse.next({ request });
-          cookiesToSet.forEach(({ name, value, options }) => {
-            response.cookies.set(name, value, options);
-          });
-        }
-      }
-    }
-  );
-
-  // Touch getUser so Supabase refreshes the session token if needed; that
-  // call writes new cookies via setAll above.
-  const { data: { user } } = await supabase.auth.getUser();
   const path = request.nextUrl.pathname;
   const isProtected = PROTECTED_PREFIXES.some((p) => path === p || path.startsWith(`${p}/`));
+  if (!isProtected) return NextResponse.next();
 
-  if (!user && isProtected) {
+  // Auth.js (NextAuth) JWT — verified locally from the session cookie, no
+  // network call. The OAuth handshake itself runs on our own domain.
+  const token = await getToken({
+    req: request,
+    secret: process.env.NEXTAUTH_SECRET
+  });
+
+  if (!token) {
     const url = request.nextUrl.clone();
     url.pathname = "/login";
     url.searchParams.set("next", path);
     return NextResponse.redirect(url);
   }
-
-  return response;
+  return NextResponse.next();
 }
 
 export const config = {

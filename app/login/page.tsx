@@ -3,7 +3,8 @@ import { redirect } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
 import { LoginForm } from "./form";
-import { supabaseServer } from "@/lib/supabase-server";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth";
 
 export const dynamic = "force-dynamic";
 
@@ -11,14 +12,14 @@ export const dynamic = "force-dynamic";
 const HERO_IMAGE = "https://ceranna.com/wp-content/uploads/2017/03/mg_7929.jpg";
 
 export default async function LoginPage() {
-  // Already signed in? Straight to the app.
+  // Already signed in? Straight to the app. redirect() throws internally, so
+  // it's kept outside the try to avoid being swallowed.
+  let authed = false;
   try {
-    const supabase = supabaseServer();
-    const { data: { user } } = await supabase.auth.getUser();
-    if (user) redirect("/discover");
-  } catch {
-    // Supabase env not set — fall through to the form.
-  }
+    const session = await getServerSession(authOptions);
+    authed = !!session?.user?.email;
+  } catch {}
+  if (authed) redirect("/discover");
 
   return (
     <div className="relative min-h-screen overflow-hidden">
