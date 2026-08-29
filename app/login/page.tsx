@@ -4,7 +4,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { LoginForm } from "./form";
 import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
+import { authOptions, demoLoginEnabled } from "@/lib/auth";
 
 export const dynamic = "force-dynamic";
 
@@ -38,7 +38,7 @@ export default async function LoginPage() {
           <h1 className="font-extrabold text-5xl tracking-[-0.05em] text-white">Mismatched.</h1>
 
           <Suspense fallback={<div className="mt-8 text-sm text-white/70">Loading…</div>}>
-            <LoginForm />
+            <LoginForm demoEnabled={demoLoginEnabled()} />
           </Suspense>
 
           <p className="mt-8 text-xs text-white/60">

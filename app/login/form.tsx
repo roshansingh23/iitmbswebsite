@@ -6,16 +6,19 @@ import { signIn } from "next-auth/react";
 
 const ERROR_MESSAGES: Record<string, string> = {
   AccessDenied: "Only IITM student email allowed.",
+  CredentialsSignin: "Wrong demo password.",
   callback_failed: "Sign-in failed.",
   Default: "Something went wrong."
 };
 
-export function LoginForm() {
+export function LoginForm({ demoEnabled = false }: { demoEnabled?: boolean }) {
   const router = useRouter();
   const params = useSearchParams();
   const errorParam = params.get("error");
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
+  const [demoOpen, setDemoOpen] = useState(false);
+  const [demoPassword, setDemoPassword] = useState("");
   // Capture the URL error once into state so we can strip ?error= from
   // the URL immediately — otherwise every reload re-shows it forever.
   const [paramError, setParamError] = useState<string | null>(
@@ -45,6 +48,29 @@ export function LoginForm() {
     }
   }
 
+  // Demo sign-in. redirect:false so a wrong password is shown in place
+  // instead of bouncing through /login?error=CredentialsSignin.
+  async function signInWithDemo(e: React.FormEvent) {
+    e.preventDefault();
+    setBusy(true);
+    setMessage(null);
+    try {
+      const res = await signIn("demo", {
+        password: demoPassword,
+        redirect: false,
+        callbackUrl: "/discover"
+      });
+      if (res?.ok) {
+        router.push(res.url ?? "/discover");
+        return;
+      }
+      setMessage(ERROR_MESSAGES[res?.error ?? ""] ?? "Wrong demo password.");
+    } catch (err: any) {
+      setMessage(err?.message ?? "Couldn't start demo sign-in.");
+    }
+    setBusy(false);
+  }
+
   const error = message || paramError;
 
   return (
@@ -71,6 +97,40 @@ export function LoginForm() {
         <GoogleMark />
         {busy ? "Opening Google…" : "Continue with Google"}
       </button>
+
+      {/* Demo way in — only rendered while DEMO_LOGIN_PASSWORD is set on the
+          server. Kept visually secondary to the real sign-in. */}
+      {demoEnabled && !demoOpen && (
+        <button
+          type="button"
+          onClick={() => setDemoOpen(true)}
+          className="mt-4 w-full text-sm font-semibold text-white/80 underline underline-offset-4"
+        >
+          Use demo login
+        </button>
+      )}
+
+      {demoEnabled && demoOpen && (
+        <form onSubmit={signInWithDemo} className="mt-4 flex flex-col gap-3">
+          <input
+            type="password"
+            value={demoPassword}
+            onChange={(ev) => setDemoPassword(ev.target.value)}
+            placeholder="Demo password"
+            autoFocus
+            autoComplete="off"
+            aria-label="Demo password"
+            className="w-full rounded-full bg-white/95 px-5 py-3 text-sm text-ink outline-none placeholder:text-ink/45"
+          />
+          <button
+            type="submit"
+            disabled={busy || !demoPassword}
+            className="w-full rounded-full border border-white/70 px-5 py-3 text-sm font-semibold text-white transition active:scale-[0.99] disabled:opacity-60"
+          >
+            {busy ? "Signing in…" : "Enter demo"}
+          </button>
+        </form>
+      )}
     </>
   );
 }

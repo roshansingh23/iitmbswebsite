@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
+import { authOptions, demoLoginEnabled } from "@/lib/auth";
 import { supabaseAdmin } from "@/lib/supabase-server";
 
 export const runtime = "nodejs";
@@ -14,7 +14,8 @@ export async function GET() {
     GOOGLE_CLIENT_SECRET: !!process.env.GOOGLE_CLIENT_SECRET,
     NEXTAUTH_SECRET: !!process.env.NEXTAUTH_SECRET,
     NEXTAUTH_URL: !!process.env.NEXTAUTH_URL,
-    ALLOWED_EMAIL_DOMAINS: !!process.env.ALLOWED_EMAIL_DOMAINS
+    ALLOWED_EMAIL_DOMAINS: !!process.env.ALLOWED_EMAIL_DOMAINS,
+    DEMO_LOGIN: demoLoginEnabled()
   };
 
   // Admin DB connectivity test — uses the service_role JWT, no password.
@@ -48,6 +49,7 @@ export async function GET() {
     issues.push(`DB unreachable through service_role: ${db_error}`);
   }
   if (!env.GOOGLE_CLIENT_ID || !env.GOOGLE_CLIENT_SECRET) issues.push("Set GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET on Vercel.");
+  if (env.DEMO_LOGIN) issues.push("Demo login is ON (DEMO_LOGIN_PASSWORD set) — unset it once Google sign-in works.");
   if (!env.NEXTAUTH_SECRET) issues.push("Set NEXTAUTH_SECRET on Vercel (openssl rand -base64 32).");
   if (!env.NEXTAUTH_URL) issues.push("Set NEXTAUTH_URL to your custom domain (https://...).");
 

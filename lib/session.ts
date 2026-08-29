@@ -65,6 +65,9 @@ export async function getSessionUser(): Promise<Profile | null> {
     }
 
     const name = session?.user?.name ?? null;
+    // A demo sign-in gets a real row (so the app works end to end) but starts
+    // paused, which keeps it out of every other member's discover feed.
+    const isDemo = (session?.user as any)?.demo === true;
     const id = "c" + Math.random().toString(36).slice(2, 14) + Math.random().toString(36).slice(2, 14);
     const now = new Date().toISOString();
     const { data: created, error } = await admin
@@ -77,6 +80,7 @@ export async function getSessionUser(): Promise<Profile | null> {
         qrCode: randomQrCode(),
         showMe: [],
         accessTier: "free",
+        paused: isDemo,
         filterAgeMin: 18,
         filterAgeMax: 99,
         lastSeenAt: now,
