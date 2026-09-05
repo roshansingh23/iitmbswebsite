@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { BellRing, Check, Loader2, SlidersHorizontal } from "lucide-react";
+import { BellRing, Check, Loader2, Send, SlidersHorizontal } from "lucide-react";
 import { BottomSheet } from "@/components/bottom-sheet";
 
 const ACCENT = "#6D1F4E";
@@ -227,23 +227,33 @@ export function RandomConnect({ children }: { children?: React.ReactNode }) {
       </div>
 
       {/* Composer, present but inert until there is someone to talk to.
-          The send button would do nothing while waiting, so the slot on the
-          right holds the options icon instead. */}
+          The options icon sits inside the input, so the button on the right
+          stays the send button and the row keeps the shape it will have
+          once there is someone to talk to. */}
       <div className="border-t border-hairline bg-white">
         <div className="px-4 py-3 flex items-center gap-2">
-          <div className="flex-1 rounded-full bg-tint px-5 py-3 text-sm text-ink/35 select-none">
-            Waiting for someone…
+          <div className="relative flex-1">
+            <div className="rounded-full bg-tint pl-5 pr-12 py-3 text-sm text-ink/35 select-none">
+              Waiting for someone…
+            </div>
+            <button
+              type="button"
+              onClick={() => setSheetOpen(true)}
+              aria-expanded={sheetOpen}
+              aria-label="Interests and preferences"
+              title="Interests & preferences"
+              className="absolute right-1.5 top-1/2 -translate-y-1/2 w-9 h-9 rounded-full flex items-center justify-center text-muted hover:bg-black/5 transition active:scale-95"
+            >
+              <SlidersHorizontal size={17} />
+            </button>
           </div>
-          <button
-            type="button"
-            onClick={() => setSheetOpen(true)}
-            aria-expanded={sheetOpen}
-            aria-label="Interests and preferences"
-            title="Interests & preferences"
-            className="shrink-0 w-11 h-11 rounded-full border border-hairline flex items-center justify-center text-muted hover:bg-tint transition active:scale-95"
+          <span
+            className="shrink-0 w-11 h-11 rounded-full flex items-center justify-center text-white opacity-40"
+            style={{ background: ACCENT }}
+            aria-hidden
           >
-            <SlidersHorizontal size={18} />
-          </button>
+            <Send size={17} />
+          </span>
         </div>
       </div>
 
