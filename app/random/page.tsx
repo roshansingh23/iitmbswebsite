@@ -70,7 +70,7 @@ export default async function RandomPage() {
     <AppShell>
       {/* The chat window is the screen. The search runs inside it, and
           everything you can set lives in the sheet that slides up. */}
-      <RandomConnect hasInterests={me.interests.length > 0}>
+      <RandomConnect>
         <RandomPreferences
           initialGender={me.randomPrefGender}
           initialWorkspace={me.randomPrefWorkspace}
