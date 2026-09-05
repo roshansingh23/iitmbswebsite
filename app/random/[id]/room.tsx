@@ -7,8 +7,7 @@ import { ArrowLeft, Bookmark, BookmarkCheck, CornerDownLeft, ShieldAlert, Shuffl
 import { supabaseBrowser } from "@/lib/supabase-browser";
 import { AnonAvatar } from "@/components/anon-avatar";
 import { BottomSheet } from "@/components/bottom-sheet";
-import { InterestPicker } from "../interests";
-import { RandomPreferences } from "../preferences";
+import { RandomOptions } from "../options";
 
 const ACCENT = "#6D1F4E";
 // Reveal is the one irreversible thing in this room — once both sides ask,
@@ -44,7 +43,8 @@ export function RandomRoom({
   initialMessages,
   interests,
   prefGender,
-  prefWorkspace
+  prefWorkspace,
+  displayName
 }: {
   session: PublicSession;
   side: "A" | "B";
@@ -52,6 +52,7 @@ export function RandomRoom({
   interests: string[];
   prefGender: string;
   prefWorkspace: string;
+  displayName: string | null;
 }) {
   const router = useRouter();
   const [session, setSession] = useState(initialSession);
@@ -60,6 +61,7 @@ export function RandomRoom({
   const [error, setError] = useState<string | null>(null);
   const [blockOpen, setBlockOpen] = useState(false);
   const [optionsOpen, setOptionsOpen] = useState(false);
+  const [connectOpen, setConnectOpen] = useState(false);
   const [blockReason, setBlockReason] = useState("");
   const [partnerTyping, setPartnerTyping] = useState(false);
   const scroller = useRef<HTMLDivElement>(null);
@@ -304,11 +306,11 @@ export function RandomRoom({
                 </p>
                 <button
                   type="button"
-                  onClick={askReveal}
+                  onClick={() => setConnectOpen(true)}
                   className="rounded-full px-4 py-1.5 text-xs font-semibold text-white shrink-0"
                   style={{ background: REVEAL_RED }}
                 >
-                  Reveal
+                  Decide
                 </button>
               </div>
             ) : session.revealAskedByMe ? (
@@ -413,10 +415,10 @@ export function RandomRoom({
             {!session.revealAskedByMe && (
               <button
                 type="button"
-                onClick={askReveal}
+                onClick={() => setConnectOpen(true)}
                 className="shrink-0 rounded-full border border-hairline p-2 text-muted hover:bg-tint transition"
-                aria-label="Ask to swap profiles"
-                title="Ask to swap profiles"
+                aria-label="Keep this connection"
+                title="Keep this connection"
               >
                 <Eye size={16} />
               </button>
@@ -444,6 +446,54 @@ export function RandomRoom({
         </div>
       )}
 
+      {/* Two ways to hold on to someone, because wanting to keep talking is
+          not the same as wanting to be identified. Saving is one-sided and
+          reversible; swapping profiles needs both people and is not. */}
+      <BottomSheet
+        open={connectOpen}
+        onClose={() => setConnectOpen(false)}
+        title="Keep this connection"
+      >
+        <div className="space-y-3 -mt-1">
+          <button
+            type="button"
+            onClick={async () => {
+              if (!session.keptByMe) await toggleKeep();
+              setConnectOpen(false);
+            }}
+            className="w-full text-left rounded-2xl border border-hairline p-4 hover:bg-tint transition"
+          >
+            <p className="text-sm font-semibold flex items-center gap-2">
+              <Bookmark size={15} />
+              {session.keptByMe ? "Saved — stays anonymous" : "Save, stay anonymous"}
+            </p>
+            <p className="mt-1 text-xs text-muted">
+              Keeps the chat in your list so you can come back to it. They
+              are not told, nobody sees a name or a photo, and you can undo
+              it at any time.
+            </p>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => { askReveal(); setConnectOpen(false); }}
+            disabled={session.revealAskedByMe}
+            className="w-full text-left rounded-2xl border p-4 transition disabled:opacity-60"
+            style={{ borderColor: REVEAL_RED }}
+          >
+            <p className="text-sm font-semibold flex items-center gap-2" style={{ color: REVEAL_RED }}>
+              <Eye size={15} />
+              {session.revealAskedByMe ? "Asked to swap profiles" : "Swap profiles & connect"}
+            </p>
+            <p className="mt-1 text-xs text-muted">
+              {session.revealAskedByMe
+                ? "Waiting for them to agree. Nothing is shown until they do."
+                : "Asks them to trade real profiles. It only happens if you both agree — and once it does, it cannot be undone."}
+            </p>
+          </button>
+        </div>
+      </BottomSheet>
+
       {/* Change what you are matched on without leaving the conversation.
           Saving re-renders this page's server component, so the next search
           uses the new tags — the current pairing is already made. */}
@@ -452,13 +502,13 @@ export function RandomRoom({
         onClose={() => setOptionsOpen(false)}
         title="Interests & preferences"
       >
-        <RandomPreferences initialGender={prefGender} initialWorkspace={prefWorkspace} />
-        <div>
-          <p className="text-[11px] uppercase tracking-[0.16em] text-muted font-semibold mb-2">
-            Interests
-          </p>
-          <InterestPicker current={interests} />
-        </div>
+        <RandomOptions
+          initialGender={prefGender}
+          initialWorkspace={prefWorkspace}
+          initialInterests={interests}
+          initialName={displayName}
+          onSaved={() => setOptionsOpen(false)}
+        />
       </BottomSheet>
 
       {/* Block + report sheet */}

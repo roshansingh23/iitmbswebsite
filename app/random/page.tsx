@@ -5,10 +5,7 @@ import { supabaseAdmin } from "@/lib/supabase-server";
 import { AppShell } from "@/components/app-shell";
 import { AnonAvatar } from "@/components/anon-avatar";
 import { aliasFor, partnerIdOf, sideOf, type SessionRow } from "@/lib/random";
-import { DisplayNameEditor } from "./display-name";
 import { RandomConnect } from "./connect";
-import { InterestPicker } from "./interests";
-import { RandomPreferences } from "./preferences";
 
 export const dynamic = "force-dynamic";
 
@@ -70,25 +67,12 @@ export default async function RandomPage() {
     <AppShell>
       {/* The chat window is the screen. The search runs inside it, and
           everything you can set lives in the sheet that slides up. */}
-      <RandomConnect>
-        <RandomPreferences
-          initialGender={me.randomPrefGender}
-          initialWorkspace={me.randomPrefWorkspace}
-        />
-
-        <div>
-          <p className="text-[11px] uppercase tracking-[0.16em] text-muted font-semibold mb-2">
-            Interests
-          </p>
-          <InterestPicker current={me.interests} />
-        </div>
-
-        <div className="pt-1 border-t border-hairline">
-          <div className="pt-4">
-            <DisplayNameEditor current={me.displayName} />
-          </div>
-        </div>
-
+      <RandomConnect
+        prefGender={me.randomPrefGender}
+        prefWorkspace={me.randomPrefWorkspace}
+        interests={me.interests}
+        displayName={me.displayName}
+      >
         {kept.length > 0 && (
           <div className="pt-4 border-t border-hairline">
             <p className="text-[11px] uppercase tracking-[0.16em] text-muted font-semibold mb-2">

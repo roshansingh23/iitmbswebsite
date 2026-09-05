@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { BellRing, Check, CornerDownLeft, Loader2, SlidersHorizontal } from "lucide-react";
 import { BottomSheet } from "@/components/bottom-sheet";
+import { RandomOptions } from "./options";
 
 const ACCENT = "#6D1F4E";
 const ONLINE_GREEN = "#16A34A";
@@ -19,7 +20,19 @@ type Phase = "searching" | "stopped" | "error";
 //
 // Searching and polling are the same server call: POST /api/random/queue
 // both enqueues and polls, returning a session id the moment one exists.
-export function RandomConnect({ children }: { children?: React.ReactNode }) {
+export function RandomConnect({
+  prefGender,
+  prefWorkspace,
+  interests,
+  displayName,
+  children
+}: {
+  prefGender: string;
+  prefWorkspace: string;
+  interests: string[];
+  displayName: string | null;
+  children?: React.ReactNode;
+}) {
   const router = useRouter();
   const [phase, setPhase] = useState<Phase>("searching");
   const [error, setError] = useState<string | null>(null);
@@ -111,6 +124,28 @@ export function RandomConnect({ children }: { children?: React.ReactNode }) {
     return () => clearInterval(t);
   }, [phase]);
 
+  // Not searching still shows how many people are around — GET, so reading
+  // the number does not put us back in the queue.
+  useEffect(() => {
+    if (phase === "searching") return;
+    let stopped = false;
+    async function read() {
+      if (stopped) return;
+      try {
+        const res = await fetch("/api/random/queue");
+        if (res.ok) {
+          const d = await res.json();
+          if (stopped) return;
+          if (typeof d.onlineCount === "number") setOnlineCount(d.onlineCount);
+          if (typeof d.sharedCount === "number") setSharedCount(d.sharedCount);
+        }
+      } catch {}
+      if (!stopped) setTimeout(read, 15000);
+    }
+    read();
+    return () => { stopped = true; };
+  }, [phase]);
+
   // Thin-pool escape hatch: stop waiting, get a push when the pool wakes up.
   async function notifyMe() {
     setNotifyState("saving");
@@ -142,7 +177,7 @@ export function RandomConnect({ children }: { children?: React.ReactNode }) {
             <p className="font-semibold text-sm text-ink truncate">
               {searching ? "Searching…" : "Not searching"}
             </p>
-            {searching && onlineCount !== null ? (
+            {onlineCount !== null ? (
               <p
                 className="text-[11px] truncate flex items-center gap-1.5"
                 style={{ color: ONLINE_GREEN }}
@@ -262,6 +297,13 @@ export function RandomConnect({ children }: { children?: React.ReactNode }) {
         onClose={() => setSheetOpen(false)}
         title="Interests &amp; preferences"
       >
+        <RandomOptions
+          initialGender={prefGender}
+          initialWorkspace={prefWorkspace}
+          initialInterests={interests}
+          initialName={displayName}
+          onSaved={() => setSheetOpen(false)}
+        />
         {children}
       </BottomSheet>
     </div>
