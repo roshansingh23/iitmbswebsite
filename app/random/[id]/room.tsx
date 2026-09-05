@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, Bookmark, BookmarkCheck, CornerDownLeft, ShieldAlert, Shuffle, Eye, SlidersHorizontal } from "lucide-react";
+import { ArrowLeft, Ban, Bookmark, CornerDownLeft, Eye, Shuffle, SkipForward, SlidersHorizontal } from "lucide-react";
 import { supabaseBrowser } from "@/lib/supabase-browser";
 import { AnonAvatar } from "@/components/anon-avatar";
 import { BottomSheet } from "@/components/bottom-sheet";
@@ -258,41 +258,27 @@ export function RandomRoom({
             <ArrowLeft size={20} strokeWidth={2} />
           </Link>
           <AnonAvatar name={session.partnerName} size={28} />
-          <div className="min-w-0 flex-1">
-            <p className="font-semibold text-sm truncate text-ink">
-              {session.partnerName}
-            </p>
-            <p className="text-[11px] text-muted truncate">
-              {session.ended ? "Chat ended" : `Anonymous · you're ${session.myName}`}
-            </p>
-          </div>
-          <button
-            type="button"
-            onClick={() => setOptionsOpen(true)}
-            aria-label="Interests and preferences"
-            title="Interests & preferences"
-            className="p-2 active:scale-95 transition text-muted"
-          >
-            <SlidersHorizontal size={19} />
-          </button>
-          <button
-            type="button"
-            onClick={toggleKeep}
-            aria-label={session.keptByMe ? "Saved" : "Save this chat"}
-            className="p-2 active:scale-95 transition"
-            title={session.keptByMe ? "Saved to your history" : "Save this chat"}
-          >
-            {session.keptByMe
-              ? <BookmarkCheck size={20} style={{ color: ACCENT }} />
-              : <Bookmark size={20} className="text-muted" />}
-          </button>
+          <p className="min-w-0 flex-1 font-semibold text-sm truncate text-ink">
+            {session.partnerName}
+          </p>
+          {!session.ended && (
+            <button
+              type="button"
+              onClick={() => setConnectOpen(true)}
+              className="shrink-0 rounded-full px-3.5 py-1.5 text-xs font-semibold text-white active:scale-95 transition"
+              style={{ background: REVEAL_RED }}
+            >
+              Reveal
+            </button>
+          )}
           <button
             type="button"
             onClick={() => setBlockOpen(true)}
             aria-label="Block and report"
+            title="Block and report"
             className="p-2 -mr-2 active:scale-95 transition text-muted"
           >
-            <ShieldAlert size={20} />
+            <Ban size={20} />
           </button>
         </div>
 
@@ -403,36 +389,39 @@ export function RandomRoom({
       {!session.ended && (
         <div className="border-t border-hairline bg-white" style={{ paddingBottom: "env(safe-area-inset-bottom)" }}>
           {error && <p className="px-4 pt-2 text-xs" style={{ color: "#D43A2F" }}>{error}</p>}
-          <div className="px-4 py-2 flex items-center gap-2">
+          <form onSubmit={send} className="px-4 py-3 flex items-center gap-2">
+            {/* Skip sits opposite send: one button leaves this person, the
+                other talks to them. */}
             <button
               type="button"
               onClick={() => endAnd(true)}
-              className="shrink-0 rounded-full border border-hairline px-3 py-2 text-xs font-semibold text-muted hover:bg-tint transition"
-              title="End this and find someone new"
+              aria-label="Skip to someone new"
+              title="Skip to someone new"
+              className="shrink-0 w-11 h-11 rounded-full border border-hairline flex items-center justify-center text-muted hover:bg-tint transition active:scale-95"
             >
-              Next
+              <SkipForward size={17} />
             </button>
-            {!session.revealAskedByMe && (
+
+            <div className="relative flex-1">
+              <input
+                value={body}
+                onChange={(e) => { setBody(e.target.value); signalTyping(); }}
+                placeholder="Say something"
+                maxLength={1000}
+                aria-label="Message"
+                className="w-full rounded-full bg-tint pl-5 pr-12 py-3 text-sm outline-none placeholder:text-ink/40"
+              />
               <button
                 type="button"
-                onClick={() => setConnectOpen(true)}
-                className="shrink-0 rounded-full border border-hairline p-2 text-muted hover:bg-tint transition"
-                aria-label="Keep this connection"
-                title="Keep this connection"
+                onClick={() => setOptionsOpen(true)}
+                aria-label="Interests and preferences"
+                title="Interests & preferences"
+                className="absolute right-1.5 top-1/2 -translate-y-1/2 w-9 h-9 rounded-full flex items-center justify-center text-muted hover:bg-black/5 transition active:scale-95"
               >
-                <Eye size={16} />
+                <SlidersHorizontal size={17} />
               </button>
-            )}
-          </div>
-          <form onSubmit={send} className="px-4 pb-3 flex items-end gap-2">
-            <input
-              value={body}
-              onChange={(e) => { setBody(e.target.value); signalTyping(); }}
-              placeholder="Say something"
-              maxLength={1000}
-              aria-label="Message"
-              className="flex-1 rounded-full bg-tint px-5 py-3 text-sm outline-none placeholder:text-ink/40"
-            />
+            </div>
+
             <button
               type="submit"
               disabled={!body.trim()}
