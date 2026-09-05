@@ -28,10 +28,15 @@ export default async function ConfessionsPage({ searchParams }: { searchParams: 
     dbError = true;
   } else {
     try {
-      const { data, error } = await admin
+      // Scoped to the reader's pool, the same rule random chat uses.
+      // Confessions written before scoping existed have a null poolId and
+      // stay visible to everyone rather than vanishing.
+      let q = admin
         .from("Confession")
         .select("id,body,createdAt,reactions:ConfessionReaction(kind)")
-        .eq("approved", true)
+        .eq("approved", true);
+      if (me.poolId) q = q.or(`poolId.eq.${me.poolId},poolId.is.null`);
+      const { data, error } = await q
         .order("createdAt", { ascending: false })
         .limit(80);
       if (error) throw error;

@@ -7,8 +7,8 @@ export const runtime = "nodejs";
 
 const schema = z.object({ body: z.string().min(1).max(500) });
 
-function cuid() {
-  return "c" + Math.random().toString(36).slice(2, 14) + Math.random().toString(36).slice(2, 14);
+function newId() {
+  return "cf" + globalThis.crypto.randomUUID().replace(/-/g, "");
 }
 
 export async function POST(req: Request) {
@@ -21,8 +21,10 @@ export async function POST(req: Request) {
   if (!parsed.success) return NextResponse.json({ error: "Invalid" }, { status: 400 });
 
   const { error } = await admin.from("Confession").insert({
-    id: cuid(),
+    id: newId(),
     authorId: me.id,
+    // Scoped like random pairing — a confession is for your own pool.
+    poolId: me.poolId,
     body: parsed.data.body,
     approved: true,
     createdAt: new Date().toISOString()

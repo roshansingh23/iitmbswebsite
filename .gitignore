@@ -16,3 +16,6 @@ prisma/.env
 *.tsbuildinfo
 
 .vercel
+
+# Playwright MCP scratch output
+.playwright-mcp/

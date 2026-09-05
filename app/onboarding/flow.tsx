@@ -87,9 +87,9 @@ export function OnboardingFlow({
         setSaving(false);
         return;
       }
-      // Hard navigation so the discover server component re-runs fresh
-      // with the updated profile rather than a cached client view.
-      window.location.href = "/discover";
+      // Hard navigation so the server components re-run fresh with the
+      // updated profile rather than a cached client view.
+      window.location.href = "/random";
     } catch {
       setErr("Network hiccup. Try again.");
       setSaving(false);

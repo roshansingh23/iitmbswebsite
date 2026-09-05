@@ -15,7 +15,7 @@ export async function GET(_req: Request, { params }: { params: { id: string } })
 
   if (!user) return new Response("Not found", { status: 404 });
 
-  const site = process.env.NEXT_PUBLIC_SITE_URL ?? "https://iitmbswebsite.vercel.app";
+  const site = process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
   const url = `${site}/u/${(user as any).qrCode}`;
   const png = await renderQrPng(url);
   return new Response(new Uint8Array(png), {

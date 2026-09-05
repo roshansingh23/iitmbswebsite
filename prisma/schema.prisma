@@ -82,13 +82,65 @@ enum HookTarget {
   profile
 }
 
+// ──────────────────────────────────────────────────────────────────────
+// Email domains.
+//
+// One row per distinct sign-in domain. We never derive an institution name
+// from a domain — `name` stays null until a human fills it in, and the UI
+// shows the raw domain until then.
+//
+// `poolId` is what random pairing shards on. It defaults to the row's own
+// id, so every domain is its own pool; pointing several rows at one id
+// merges them into a single pool. That is an admin action, never a guess.
+// ──────────────────────────────────────────────────────────────────────
+
+model Domain {
+  id        String   @id @default(cuid())
+  domain    String   @unique
+  name      String?
+  poolId    String
+  verified  Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  users     User[]
+
+  @@index([poolId])
+}
+
+enum RandomQueueState {
+  waiting
+  paired
+}
+
+enum RandomEndReason {
+  left
+  skipped
+  reported
+  expired
+}
+
 model User {
   id              String        @id @default(cuid())
   // Supabase auth.users.id (UUID) for the OAuth identity linked to this profile.
   authId          String?       @unique @db.Uuid
   email           String        @unique
+  // The sign-in domain this member belongs to. Nullable because a legacy
+  // row predates the Domain migration.
+  domainId        String?
+  emailDomain     Domain?       @relation(fields: [domainId], references: [id], onDelete: SetNull)
   emailVerified   DateTime?
+  // Real name from the OAuth identity. NEVER sent to the other side of an
+  // anonymous chat — only after a mutual reveal.
   name            String?
+  // Self-chosen handle shown in random chat. Null = fall back to a
+  // generated per-session alias. Not unique, on purpose.
+  displayName     String?
+  // Soft pairing signal for random chat. Never used as a filter.
+  interests       String[]      @default([])
+  // Stated random-chat preferences. Stored, but pair_random() does not
+  // read them yet — see prisma-migrations/2026-09-05-random-preferences.sql
+  randomPrefGender    String    @default("anyone")
+  randomPrefWorkspace String    @default("same")
   age             Int?
   // Free-form fields that the UI may use but that must NOT be exposed as
   // identity-revealing in the public profile UI. We keep them generic.
@@ -142,8 +194,14 @@ model User {
   referralsMade   Referral[]    @relation("ReferralInviter")
   referralsGot    Referral[]    @relation("ReferralInvitee")
   pushSubscriptions PushSubscription[]
+  randomQueue     RandomQueue?
+  randomSessionsA RandomSession[] @relation("RandomA")
+  randomSessionsB RandomSession[] @relation("RandomB")
+  randomMessages  RandomMessage[]
+  randomPing      RandomPing?
 
   @@index([gender, orientation, paused])
+  @@index([domainId])
 }
 
 model Photo {
@@ -265,6 +323,8 @@ model Message {
 
 model Confession {
   id          String                @id @default(cuid())
+  // Scoped to the author's pairing pool, same rule as random chat.
+  poolId      String?
   // Identity hidden from users, visible to admins via this column.
   authorId    String
   body        String                @db.Text
@@ -275,6 +335,7 @@ model Confession {
   reports     Report[]
 
   @@index([approved, createdAt])
+  @@index([poolId, approved, createdAt])
 }
 
 model ConfessionReaction {
@@ -309,6 +370,7 @@ enum ReportTargetType {
   confession
   confession_reply
   photo
+  random_message
 }
 
 enum ReportStatus {
@@ -331,11 +393,16 @@ model Report {
   targetConfession    Confession?      @relation(fields: [targetConfessionId], references: [id], onDelete: SetNull)
   targetReplyId       String?
   targetReply         ConfessionReply? @relation(fields: [targetReplyId], references: [id], onDelete: SetNull)
+  // Random-chat messages live in their own table, so they need their own
+  // pointer — targetMessageId is bound to "Message".
+  targetRandomMessageId String?
+  targetRandomMessage   RandomMessage? @relation(fields: [targetRandomMessageId], references: [id], onDelete: SetNull)
   reason              String           @db.Text
   status              ReportStatus     @default(open)
   createdAt           DateTime         @default(now())
 
   @@index([status, createdAt])
+  @@index([targetRandomMessageId])
 }
 
 model Block {
@@ -450,4 +517,88 @@ model Referral {
   createdAt   DateTime @default(now())
 
   @@index([inviterId, verified])
+}
+
+
+// ──────────────────────────────────────────────────────────────────────
+// Random chat — the primary feature.
+//
+// A member enters the queue; the matchmaker pairs them with another
+// waiting member from the SAME college and opens a RandomSession. The
+// pairing itself happens inside a Postgres function so two concurrent
+// requests can never claim the same partner (see prisma-migrations/).
+// ──────────────────────────────────────────────────────────────────────
+
+model RandomQueue {
+  // One row per user — entering the queue twice just refreshes the row.
+  userId      String           @id
+  user        User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  // Pairing pool = Domain.poolId. Denormalised onto the queue row so the
+  // matchmaker never joins to resolve it.
+  poolId      String
+  state       RandomQueueState @default(waiting)
+  // Set the moment the matchmaker pairs this row; the client polls for it.
+  sessionId   String?
+  joinedAt    DateTime         @default(now())
+  // Refreshed by the waiting client every few seconds. A row that stops
+  // beating is swept so we never pair against a closed tab.
+  heartbeatAt DateTime         @default(now())
+
+  @@index([poolId, state, heartbeatAt])
+  @@index([state, heartbeatAt])
+}
+
+model RandomSession {
+  id         String           @id @default(cuid())
+  poolId     String
+  userAId    String
+  userA      User             @relation("RandomA", fields: [userAId], references: [id], onDelete: Cascade)
+  userBId    String
+  userB      User             @relation("RandomB", fields: [userBId], references: [id], onDelete: Cascade)
+  startedAt  DateTime         @default(now())
+  endedAt    DateTime?
+  endedById  String?
+  endReason  RandomEndReason?
+  // "Keep this chat" is per-side. A session either side kept is retained
+  // indefinitely and shows in that member's chat list; one neither side
+  // kept is purged by the retention sweep after RETENTION_DAYS.
+  keptByA    Boolean          @default(false)
+  keptByB    Boolean          @default(false)
+  // Identities stay hidden until BOTH sides ask to reveal. When they do,
+  // a real Match + Conversation is created and this points at it — the
+  // bridge from random chat into the dating half of the app.
+  revealAskedByA Boolean      @default(false)
+  revealAskedByB Boolean      @default(false)
+  conversationId String?      @unique
+  messageCount   Int          @default(0)
+
+  messages   RandomMessage[]
+
+  @@index([userAId, startedAt(sort: Desc)])
+  @@index([userBId, startedAt(sort: Desc)])
+  @@index([endedAt])
+}
+
+model RandomMessage {
+  id         String        @id @default(cuid())
+  sessionId  String
+  session    RandomSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  fromUserId String
+  fromUser   User          @relation(fields: [fromUserId], references: [id], onDelete: Cascade)
+  body       String        @db.Text
+  createdAt  DateTime      @default(now())
+  reports    Report[]
+
+  @@index([sessionId, createdAt])
+}
+
+// Someone who found an empty queue and asked to be told when the pool wakes
+// up. Consumed (deleted) when the push goes out.
+model RandomPing {
+  userId    String   @id
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  poolId    String
+  createdAt DateTime @default(now())
+
+  @@index([poolId])
 }

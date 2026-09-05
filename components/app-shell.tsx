@@ -3,12 +3,12 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
-import { Compass, Bookmark, MessageSquareText, Quote, CircleUser, Download } from "lucide-react";
+import { Shuffle, Compass, Bookmark, MessageSquareText, Quote, CircleUser, Download } from "lucide-react";
 import { ChatListPanel } from "@/components/chat-list-panel";
 import { PushPermissionPrompt } from "@/components/push-permission-prompt";
 
-// Mobile: black bottom bar with five icon tabs (Discover, Matches, Chats,
-// Spill, You).
+// Mobile: black bottom bar with six icon tabs (Random, Discover, Matches,
+// Chats, Spill, You). Random leads because it is the primary feature.
 // md+: floating vertical pill on the left with four tabs (Chats is dropped
 // because lg+ shows a permanent chat list panel right next to the sidebar).
 // lg+: chat list panel renders alongside the sidebar — picking a chat opens
@@ -27,6 +27,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 }
 
 const MOBILE_TABS = [
+  { href: "/random",      label: "Random",   Icon: Shuffle },
   { href: "/discover",    label: "Discover", Icon: Compass },
   { href: "/hooks",       label: "Matches",  Icon: Bookmark },
   { href: "/matches",     label: "Chats",    Icon: MessageSquareText },
@@ -36,6 +37,7 @@ const MOBILE_TABS = [
 
 // Desktop sidebar has no Chats tab — the chat list panel is permanent.
 const DESKTOP_TABS = [
+  { href: "/random",      label: "Random",   Icon: Shuffle },
   { href: "/discover",    label: "Discover", Icon: Compass },
   { href: "/hooks",       label: "Matches",  Icon: Bookmark },
   { href: "/confessions", label: "Spill",    Icon: Quote },
@@ -46,7 +48,7 @@ function SideNav() {
   const path = usePathname();
   // Chat takes over the screen — its own input bar sits at the bottom, so
   // hide the tab bar there.
-  const hideBottomNav = path.startsWith("/chat/");
+  const hideBottomNav = path.startsWith("/chat/") || /^\/random\/[^/]+/.test(path);
   const [canInstall, setCanInstall] = useState(false);
 
   useEffect(() => {
@@ -82,7 +84,7 @@ function SideNav() {
         }}
       >
         <div className="mx-auto max-w-md">
-          <ul className="grid grid-cols-5">
+          <ul className="grid grid-cols-6">
             {MOBILE_TABS.map((t) => {
               const active = path === t.href || path.startsWith(`${t.href}/`);
               const Icon = t.Icon;

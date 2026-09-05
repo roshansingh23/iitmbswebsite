@@ -27,7 +27,7 @@ self.addEventListener("push", (event) => {
     badge: "/icon-192",
     tag: data.tag || undefined,
     renotify: !!data.tag,
-    data: { url: data.url || "/discover" },
+    data: { url: data.url || "/random" },
     vibrate: [120, 60, 120]
   };
   event.waitUntil(self.registration.showNotification(title, options));
@@ -35,7 +35,7 @@ self.addEventListener("push", (event) => {
 
 self.addEventListener("notificationclick", (event) => {
   event.notification.close();
-  const targetUrl = (event.notification.data && event.notification.data.url) || "/discover";
+  const targetUrl = (event.notification.data && event.notification.data.url) || "/random";
   event.waitUntil(
     self.clients.matchAll({ type: "window", includeUncontrolled: true }).then((wins) => {
       // Re-use any open Mismatched window if possible.

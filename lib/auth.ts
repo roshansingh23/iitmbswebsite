@@ -9,7 +9,7 @@ import { isAllowedEmail } from "./auth-domain";
 // password-gated way in. Leave the env var unset and the provider is not
 // registered at all — there is no demo door in production by default.
 export const DEMO_PROVIDER_ID = "demo";
-const DEMO_EMAIL = (process.env.DEMO_LOGIN_EMAIL ?? "demo@iitm.ac.in").trim().toLowerCase();
+const DEMO_EMAIL = (process.env.DEMO_LOGIN_EMAIL ?? "demo@example.edu").trim().toLowerCase();
 
 export function demoLoginEnabled(): boolean {
   return (process.env.DEMO_LOGIN_PASSWORD ?? "").trim().length > 0;
@@ -62,9 +62,9 @@ export const authOptions: NextAuthOptions = {
   // ?error= param the form already knows how to display.
   pages: { signIn: "/login", error: "/login" },
   callbacks: {
-    // Silent IITM-domain gate. Returning false makes NextAuth redirect to
+    // Silent email gate. Returning false makes NextAuth redirect to
     // /login?error=AccessDenied, which the login form renders as
-    // "Only IITM student email allowed." The demo account is exempt — it
+    // "That email can't be used to sign in." The demo account is exempt — it
     // already proved itself with the shared password.
     async signIn({ user, account }) {
       if (account?.provider === DEMO_PROVIDER_ID) return demoLoginEnabled();

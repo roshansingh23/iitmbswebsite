@@ -5,7 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { signIn } from "next-auth/react";
 
 const ERROR_MESSAGES: Record<string, string> = {
-  AccessDenied: "Only IITM student email allowed.",
+  AccessDenied: "That email can't be used to sign in.",
   CredentialsSignin: "Wrong demo password.",
   callback_failed: "Sign-in failed.",
   Default: "Something went wrong."
@@ -39,9 +39,9 @@ export function LoginForm({ demoEnabled = false }: { demoEnabled?: boolean }) {
     setMessage(null);
     try {
       // Auth.js handshake on our own domain. On success it lands on
-      // /discover; a blocked (non-IITM) email comes back to
+      // /random; a rejected email comes back to
       // /login?error=AccessDenied, handled below.
-      await signIn("google", { callbackUrl: "/discover" });
+      await signIn("google", { callbackUrl: "/random" });
     } catch (e: any) {
       setMessage(e?.message ?? "Couldn't start sign-in.");
       setBusy(false);
@@ -58,10 +58,10 @@ export function LoginForm({ demoEnabled = false }: { demoEnabled?: boolean }) {
       const res = await signIn("demo", {
         password: demoPassword,
         redirect: false,
-        callbackUrl: "/discover"
+        callbackUrl: "/random"
       });
       if (res?.ok) {
-        router.push(res.url ?? "/discover");
+        router.push(res.url ?? "/random");
         return;
       }
       setMessage(ERROR_MESSAGES[res?.error ?? ""] ?? "Wrong demo password.");
@@ -76,7 +76,7 @@ export function LoginForm({ demoEnabled = false }: { demoEnabled?: boolean }) {
   return (
     <>
       {/* Error sits ABOVE the button in a raised white block with black
-          text so an invalid / non-IITM email is impossible to miss. */}
+          text so a rejected email is impossible to miss. */}
       {error && (
         <div
           className="mt-8 rounded-xl bg-white px-4 py-3"
