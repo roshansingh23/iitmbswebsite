@@ -12,7 +12,7 @@ const HERO_IMAGE = "https://ceranna.com/wp-content/uploads/2017/03/mg_7929.jpg";
 
 export default async function Landing() {
   // Signed-in users have no reason to see the marketing page — send them
-  // into the app. Keeps a stray hit on "/" (e.g. after a desktop/mobile
+  // into the app, which opens on Random. Keeps a stray hit on "/" (e.g. after a desktop/mobile
   // view toggle) from stranding them on the homepage. redirect() is kept
   // outside the try so its internal throw isn't swallowed.
   let authed = false;
@@ -20,7 +20,7 @@ export default async function Landing() {
     const session = await getServerSession(authOptions);
     authed = !!session?.user?.email;
   } catch {}
-  if (authed) redirect("/discover");
+  if (authed) redirect("/random");
 
   return (
     <div className="min-h-screen bg-white flex flex-col">
@@ -121,7 +121,7 @@ function Statement() {
               already
               <CircleAnnotation />
             </span>{" "}
-            <br/> on campus.
+            <br/> on your campus.
           </h2>
 
           <div className="mt-14">

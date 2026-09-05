@@ -19,7 +19,7 @@ export default async function LoginPage() {
     const session = await getServerSession(authOptions);
     authed = !!session?.user?.email;
   } catch {}
-  if (authed) redirect("/discover");
+  if (authed) redirect("/random");
 
   return (
     <div className="relative min-h-screen overflow-hidden">

@@ -15,7 +15,7 @@ function isAdminEmail(email: string | null | undefined) {
 export default async function AdminPage() {
   const me = await getSessionUser();
   if (!me) redirect("/login");
-  if (!me.isAdmin && !isAdminEmail(me.email)) redirect("/discover");
+  if (!me.isAdmin && !isAdminEmail(me.email)) redirect("/random");
 
   const reports = await db.report.findMany({
     where: { status: "open" },

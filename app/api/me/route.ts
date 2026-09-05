@@ -2,11 +2,23 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { requireUser } from "@/lib/session";
 import { supabaseAdmin } from "@/lib/supabase-server";
+import { sanitizeDisplayName } from "@/lib/anon-name";
+import { sanitizeInterests } from "@/lib/interests";
 
 export const runtime = "nodejs";
 
 const schema = z.object({
   name: z.string().min(1).max(60).optional(),
+  // The anonymous handle. Validated by sanitizeDisplayName below, not here,
+  // so the member gets a message that says what to fix. null clears it and
+  // puts them back on a generated alias.
+  displayName: z.string().nullable().optional(),
+  // Soft pairing tags. Unknown slugs are dropped, not rejected.
+  interests: z.array(z.string()).optional(),
+  // Stated random-chat preferences. Stored now, not yet read by the
+  // matchmaker.
+  randomPrefGender: z.enum(["anyone", "women", "men"]).optional(),
+  randomPrefWorkspace: z.enum(["same", "different", "any"]).optional(),
   age: z.number().int().min(18).max(99).nullable().optional(),
   bio: z.string().max(500).nullable().optional(),
   height: z.string().max(30).nullable().optional(),
@@ -32,9 +44,25 @@ export async function PATCH(req: Request) {
     return NextResponse.json({ error: "min age can't exceed max age" }, { status: 400 });
   }
 
+  const patch: Record<string, unknown> = { ...parsed.data };
+
+  if (parsed.data.interests !== undefined) {
+    patch.interests = sanitizeInterests(parsed.data.interests);
+  }
+
+  if (parsed.data.displayName !== undefined) {
+    if (parsed.data.displayName === null) {
+      patch.displayName = null;
+    } else {
+      const check = sanitizeDisplayName(parsed.data.displayName);
+      if (!check.ok) return NextResponse.json({ error: check.error }, { status: 400 });
+      patch.displayName = check.value;
+    }
+  }
+
   const { error } = await admin
     .from("User")
-    .update({ ...parsed.data, updatedAt: new Date().toISOString() })
+    .update({ ...patch, updatedAt: new Date().toISOString() })
     .eq("id", me.id);
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
   return NextResponse.json({ ok: true });

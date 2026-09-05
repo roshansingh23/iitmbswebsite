@@ -8,7 +8,7 @@ export default function manifest(): MetadataRoute.Manifest {
     name: "Mismatched",
     short_name: "Mismatched",
     description: "A quieter dating app — prompts over poses, real conversations.",
-    start_url: "/discover",
+    start_url: "/random",
     scope: "/",
     display: "standalone",
     orientation: "portrait",

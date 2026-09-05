@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { getSessionUser } from "@/lib/session";
 import { supabaseAdmin } from "@/lib/supabase-server";
+import { poolDomainIds } from "@/lib/domain-resolve";
 import { gendersIWant } from "@/lib/matching";
 import { rankCandidates, type Me, type CandidateInput } from "@/lib/recommender";
 import { AppShell } from "@/components/app-shell";
@@ -43,6 +44,9 @@ export default async function DiscoverPage() {
         admin.from("UserPrompt").select("id", { count: "exact", head: true }).eq("userId", me.id)
       ]);
       needsCompletion = (photoCount ?? 0) < 2 || (promptCount ?? 0) < 3;
+
+      // Same rule as random pairing: never show someone outside your pool.
+      const scopeDomainIds = await poolDomainIds(me.poolId);
 
       const IMPRESSION_WINDOW_MS = 24 * 60 * 60 * 1000;
       const recentImpressionCutoff = new Date(Date.now() - IMPRESSION_WINDOW_MS).toISOString();
@@ -114,6 +118,7 @@ export default async function DiscoverPage() {
           .gte("age", fAgeMin)
           .lte("age", fAgeMax);
 
+        if (scopeDomainIds) q = q.in("domainId", scopeDomainIds);
         if (fIntentions) q = q.eq("intentions", fIntentions);
         if (fActiveToday) {
           const dayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();

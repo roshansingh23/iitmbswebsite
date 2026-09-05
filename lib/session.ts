@@ -2,12 +2,29 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "./auth";
 import { supabaseAdmin } from "./supabase-server";
 import { randomQrCode } from "./qr";
+import { resolveDomainForEmail } from "./domain-resolve";
+import { domainLabel } from "./domains";
 
 export type Profile = {
   id: string;
   authId: string;
   email: string;
+  // The sign-in domain, and the pool random pairing shards on. Null only
+  // for a legacy row whose domain no longer resolves.
+  domainId: string | null;
+  poolId: string | null;
+  // What to show the member: the domain's name if someone set one, the raw
+  // domain otherwise. Never a guess.
+  domainLabel: string | null;
   name: string | null;
+  // Anonymous handle for random chat. Null = a generated alias is used.
+  displayName: string | null;
+  // Soft pairing signal. Never filters anyone out.
+  interests: string[];
+  // Stated preferences. Captured and stored; the matchmaker does not read
+  // them yet.
+  randomPrefGender: string;
+  randomPrefWorkspace: string;
   age: number | null;
   bio: string | null;
   gender: string | null;
@@ -55,12 +72,22 @@ export async function getSessionUser(): Promise<Profile | null> {
     // their id and all their data after the auth migration.
     const { data: existing } = await admin
       .from("User")
-      .select("*")
+      .select("*, emailDomain:Domain(id,domain,name,poolId)")
       .eq("email", email)
       .maybeSingle();
 
     if (existing) {
       await touchLastSeen(admin, existing.id, existing.lastSeenAt);
+      // Backfill for rows created before the Domain migration, and
+      // for anyone whose first sign-in raced the Domain insert.
+      if (!existing.domainId) {
+        const d = await resolveDomainForEmail(email);
+        if (d) {
+          await admin.from("User").update({ domainId: d.id }).eq("id", existing.id);
+          existing.domainId = d.id;
+          existing.emailDomain = d;
+        }
+      }
       return normalize(existing);
     }
 
@@ -68,7 +95,8 @@ export async function getSessionUser(): Promise<Profile | null> {
     // A demo sign-in gets a real row (so the app works end to end) but starts
     // paused, which keeps it out of every other member's discover feed.
     const isDemo = (session?.user as any)?.demo === true;
-    const id = "c" + Math.random().toString(36).slice(2, 14) + Math.random().toString(36).slice(2, 14);
+    const emailDomain = await resolveDomainForEmail(email);
+    const id = "u" + globalThis.crypto.randomUUID().replace(/-/g, "");
     const now = new Date().toISOString();
     const { data: created, error } = await admin
       .from("User")
@@ -76,6 +104,7 @@ export async function getSessionUser(): Promise<Profile | null> {
         id,
         authId: authSub ?? id,
         email,
+        domainId: emailDomain?.id ?? null,
         name,
         qrCode: randomQrCode(),
         showMe: [],
@@ -99,7 +128,7 @@ export async function getSessionUser(): Promise<Profile | null> {
       return refetched ? normalize(refetched) : null;
     }
 
-    return normalize(created);
+    return normalize({ ...created, emailDomain });
   } catch (e) {
     console.error("getSessionUser failed:", e);
     return null;
@@ -121,7 +150,14 @@ function normalize(row: any): Profile {
     id: row.id,
     authId: row.authId,
     email: row.email,
+    domainId: row.domainId ?? null,
+    poolId: row.emailDomain?.poolId ?? null,
+    domainLabel: row.emailDomain ? domainLabel(row.emailDomain) : null,
     name: row.name,
+    displayName: row.displayName ?? null,
+    interests: row.interests ?? [],
+    randomPrefGender: row.randomPrefGender ?? "anyone",
+    randomPrefWorkspace: row.randomPrefWorkspace ?? "same",
     age: row.age,
     bio: row.bio,
     gender: row.gender,

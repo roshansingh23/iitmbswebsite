@@ -2,7 +2,7 @@ import { getToken } from "next-auth/jwt";
 import { NextResponse, type NextRequest } from "next/server";
 
 const PROTECTED_PREFIXES = [
-  "/discover", "/hooks", "/matches", "/chat", "/me",
+  "/random", "/discover", "/hooks", "/matches", "/chat", "/me",
   "/profile", "/onboarding", "/upgrade", "/confessions", "/admin", "/u"
 ];
 
@@ -29,6 +29,7 @@ export async function middleware(request: NextRequest) {
 
 export const config = {
   matcher: [
+    "/random/:path*",
     "/discover/:path*",
     "/hooks/:path*",
     "/matches/:path*",
