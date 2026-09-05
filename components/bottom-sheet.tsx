@@ -75,7 +75,7 @@ export function BottomSheet({
           )}
         </div>
         <div
-          className="px-6 pb-8 space-y-6 overflow-y-auto"
+          className="px-6 pb-8 space-y-6 overflow-y-auto overscroll-contain"
           style={{ maxHeight: "calc(86vh - 4.5rem)" }}
         >
           {children}

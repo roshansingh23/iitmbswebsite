@@ -2,8 +2,9 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { BellRing, Check, ChevronUp, Loader2, SlidersHorizontal } from "lucide-react";
+import { BellRing, Check, CornerDownLeft, Loader2, SlidersHorizontal } from "lucide-react";
 import { BottomSheet } from "@/components/bottom-sheet";
+import { RandomOptions } from "./options";
 
 const ACCENT = "#6D1F4E";
 const ONLINE_GREEN = "#16A34A";
@@ -20,13 +21,16 @@ type Phase = "searching" | "stopped" | "error";
 // Searching and polling are the same server call: POST /api/random/queue
 // both enqueues and polls, returning a session id the moment one exists.
 export function RandomConnect({
-  hasInterests,
+  prefGender,
+  prefWorkspace,
+  interests,
+  displayName,
   children
 }: {
-  // At least one interest is required before we look for anyone. The sheet
-  // holds itself open until they pick, because a search with nothing to
-  // match on is the worst version of this product.
-  hasInterests: boolean;
+  prefGender: string;
+  prefWorkspace: string;
+  interests: string[];
+  displayName: string | null;
   children?: React.ReactNode;
 }) {
   const router = useRouter();
@@ -36,7 +40,7 @@ export function RandomConnect({
   const [sharedCount, setSharedCount] = useState<number | null>(null);
   const [elapsed, setElapsed] = useState(0);
   const [notifyState, setNotifyState] = useState<"idle" | "saving" | "done">("idle");
-  const [sheetOpen, setSheetOpen] = useState(!hasInterests);
+  const [sheetOpen, setSheetOpen] = useState(false);
   // Guards the poll loop against a late response landing after the user
   // stopped, and navigating them into a room they backed out of.
   const activeRef = useRef(false);
@@ -95,16 +99,12 @@ export function RandomConnect({
     setPhase("stopped");
   }
 
-  // Straight into the search on arrival — but only once interests exist.
-  // When the picker saves, the server component re-renders with
-  // hasInterests true and this fires, so choosing a tag starts the search
-  // without a second tap.
+  // Straight into the search on arrival. Interests are optional — with
+  // none set you are still paired, just without the overlap bonus.
   useEffect(() => {
-    if (!hasInterests) return;
-    setSheetOpen(false);
     start();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [hasInterests]);
+  }, []);
 
   // Leave the queue if the tab closes while we are still waiting.
   useEffect(() => {
@@ -124,6 +124,28 @@ export function RandomConnect({
     return () => clearInterval(t);
   }, [phase]);
 
+  // Not searching still shows how many people are around — GET, so reading
+  // the number does not put us back in the queue.
+  useEffect(() => {
+    if (phase === "searching") return;
+    let stopped = false;
+    async function read() {
+      if (stopped) return;
+      try {
+        const res = await fetch("/api/random/queue");
+        if (res.ok) {
+          const d = await res.json();
+          if (stopped) return;
+          if (typeof d.onlineCount === "number") setOnlineCount(d.onlineCount);
+          if (typeof d.sharedCount === "number") setSharedCount(d.sharedCount);
+        }
+      } catch {}
+      if (!stopped) setTimeout(read, 15000);
+    }
+    read();
+    return () => { stopped = true; };
+  }, [phase]);
+
   // Thin-pool escape hatch: stop waiting, get a push when the pool wakes up.
   async function notifyMe() {
     setNotifyState("saving");
@@ -138,7 +160,7 @@ export function RandomConnect({
     }
   }
 
-  const searching = hasInterests && phase === "searching";
+  const searching = phase === "searching";
 
   return (
     <div className="flex flex-col min-h-[calc(100vh-6rem)]">
@@ -153,13 +175,9 @@ export function RandomConnect({
           />
           <div className="min-w-0 flex-1">
             <p className="font-semibold text-sm text-ink truncate">
-              {!hasInterests ? "Pick your interests" : searching ? "Searching…" : "Not searching"}
+              {searching ? "Searching…" : "Not searching"}
             </p>
-            {!hasInterests ? (
-              <p className="text-[11px] text-muted truncate">
-                Needed before we look for someone
-              </p>
-            ) : searching && onlineCount !== null ? (
+            {onlineCount !== null ? (
               <p
                 className="text-[11px] truncate flex items-center gap-1.5"
                 style={{ color: ONLINE_GREEN }}
@@ -183,23 +201,7 @@ export function RandomConnect({
 
       {/* Where the transcript will be. */}
       <div className="flex-1 flex flex-col items-center justify-center px-8 text-center">
-        {!hasInterests ? (
-          <>
-            <p className="text-[15px] font-semibold">Pick at least one interest</p>
-            <p className="mt-1.5 text-sm text-muted max-w-xs">
-              It&apos;s what we use to put you with someone worth talking to.
-              You can change it any time, including mid-chat.
-            </p>
-            <button
-              type="button"
-              onClick={() => setSheetOpen(true)}
-              className="mt-6 rounded-full px-7 py-3 text-sm font-semibold text-white"
-              style={{ background: ACCENT, boxShadow: "0 8px 26px rgba(109,31,78,0.35)" }}
-            >
-              Choose interests
-            </button>
-          </>
-        ) : searching ? (
+        {searching ? (
           <>
             <Loader2 size={28} className="animate-spin" style={{ color: ACCENT }} />
             <p className="mt-4 text-[15px] font-semibold">Searching for someone to talk to…</p>
@@ -259,29 +261,34 @@ export function RandomConnect({
         )}
       </div>
 
-      {/* Composer, present but inert until there is someone to talk to. */}
+      {/* Composer, present but inert until there is someone to talk to.
+          The options icon sits inside the input, so the button on the right
+          stays the send button and the row keeps the shape it will have
+          once there is someone to talk to. */}
       <div className="border-t border-hairline bg-white">
-        <div className="px-4 py-2">
-          <button
-            type="button"
-            onClick={() => setSheetOpen(true)}
-            aria-expanded={sheetOpen}
-            className="inline-flex items-center gap-1.5 rounded-full border border-hairline px-3 py-1.5 text-xs font-semibold text-muted hover:bg-tint transition"
-          >
-            <SlidersHorizontal size={13} />
-            Interests &amp; preferences
-            <ChevronUp size={13} />
-          </button>
-        </div>
-        <div className="px-4 pb-3 flex items-end gap-2">
-          <div className="flex-1 rounded-full bg-tint px-5 py-3 text-sm text-ink/35 select-none">
-            {hasInterests ? "Waiting for someone…" : "Pick interests to start"}
+        <div className="px-4 py-3 flex items-center gap-2">
+          <div className="relative flex-1">
+            <div className="rounded-full bg-tint pl-5 pr-12 py-3 text-sm text-ink/35 select-none">
+              Waiting for someone…
+            </div>
+            <button
+              type="button"
+              onClick={() => setSheetOpen(true)}
+              aria-expanded={sheetOpen}
+              aria-label="Interests and preferences"
+              title="Interests & preferences"
+              className="absolute right-1.5 top-1/2 -translate-y-1/2 w-9 h-9 rounded-full flex items-center justify-center text-muted hover:bg-black/5 transition active:scale-95"
+            >
+              <SlidersHorizontal size={17} />
+            </button>
           </div>
           <span
-            className="shrink-0 w-11 h-11 rounded-full flex items-center justify-center opacity-40"
+            className="shrink-0 w-11 h-11 rounded-full flex items-center justify-center text-white opacity-40"
             style={{ background: ACCENT }}
             aria-hidden
-          />
+          >
+            <CornerDownLeft size={18} />
+          </span>
         </div>
       </div>
 
@@ -289,9 +296,14 @@ export function RandomConnect({
         open={sheetOpen}
         onClose={() => setSheetOpen(false)}
         title="Interests &amp; preferences"
-        subtitle={hasInterests ? undefined : "Pick at least one interest to start"}
-        dismissible={hasInterests}
       >
+        <RandomOptions
+          initialGender={prefGender}
+          initialWorkspace={prefWorkspace}
+          initialInterests={interests}
+          initialName={displayName}
+          onSaved={() => setSheetOpen(false)}
+        />
         {children}
       </BottomSheet>
     </div>

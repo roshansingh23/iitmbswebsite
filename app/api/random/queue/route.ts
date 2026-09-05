@@ -8,6 +8,29 @@ import { sendPushToUser } from "@/lib/web-push";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
+// GET /api/random/queue — the online counts on their own, without
+// entering the queue. The search screen uses this when it is stopped, so
+// it can still say how many people are around without quietly putting the
+// caller back in line.
+export async function GET() {
+  const me = await requireUser().catch(() => null);
+  if (!me) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
+  if (!me.poolId) return NextResponse.json({ onlineCount: 0, sharedCount: 0 });
+
+  const admin = supabaseAdmin();
+  if (!admin) return NextResponse.json({ error: "server misconfigured" }, { status: 503 });
+
+  const { data: counts } = await admin.rpc("online_counts", {
+    p_user_id: me.id,
+    p_pool_id: me.poolId
+  });
+  const row = Array.isArray(counts) ? counts[0] : counts;
+  return NextResponse.json({
+    onlineCount: Number(row?.online ?? 0),
+    sharedCount: Number(row?.shared ?? 0)
+  });
+}
+
 // POST /api/random/queue
 //
 // Enter the queue, or poll it. Both are the same call: pair_random() upserts
@@ -59,17 +82,13 @@ export async function POST() {
     // Presence, not queue depth. Counting the queue would read zero every
     // time: pair_random() takes any waiting person, so if we are still
     // waiting there is nobody pairable left to count. See the migration.
-    const { data: counts } = await admin.rpc("online_counts", {
-      p_user_id: me.id,
-      p_pool_id: me.poolId
-    });
+    // Independent of each other, so they go together. Serialising them
+    // added a whole round trip to an endpoint the client polls every 2s.
+    const [{ data: counts }, { data: ping }] = await Promise.all([
+      admin.rpc("online_counts", { p_user_id: me.id, p_pool_id: me.poolId }),
+      admin.from("RandomPing").select("userId").eq("userId", me.id).maybeSingle()
+    ]);
     const row = Array.isArray(counts) ? counts[0] : counts;
-
-    const { data: ping } = await admin
-      .from("RandomPing")
-      .select("userId")
-      .eq("userId", me.id)
-      .maybeSingle();
 
     return NextResponse.json({
       status: "waiting",

@@ -42,6 +42,7 @@ export default async function RandomRoomPage({ params }: { params: { id: string 
       interests={me.interests}
       prefGender={me.randomPrefGender}
       prefWorkspace={me.randomPrefWorkspace}
+      displayName={me.displayName}
     />
   );
 }

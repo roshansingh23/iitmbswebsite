@@ -25,6 +25,13 @@ export function ChatListPanel() {
     path.startsWith("/chat/") ? path.split("/")[2] : null;
 
   useEffect(() => {
+    // The panel is display:none below the desktop breakpoint, but the fetch
+    // ran anyway — every phone paid for a request it could never see, on
+    // every page. Match the CSS before asking for the data.
+    if (!window.matchMedia("(min-width: 1024px) and (pointer: fine)").matches) {
+      setLoading(false);
+      return;
+    }
     let cancelled = false;
     fetch("/api/conversations")
       .then((r) => (r.ok ? r.json() : null))
