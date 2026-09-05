@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { BellRing, Check, Loader2, Send, SlidersHorizontal } from "lucide-react";
+import { BellRing, Check, CornerDownLeft, Loader2, SlidersHorizontal } from "lucide-react";
 import { BottomSheet } from "@/components/bottom-sheet";
 
 const ACCENT = "#6D1F4E";
@@ -252,7 +252,7 @@ export function RandomConnect({ children }: { children?: React.ReactNode }) {
             style={{ background: ACCENT }}
             aria-hidden
           >
-            <Send size={17} />
+            <CornerDownLeft size={18} />
           </span>
         </div>
       </div>

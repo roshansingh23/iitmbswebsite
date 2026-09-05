@@ -59,17 +59,13 @@ export async function POST() {
     // Presence, not queue depth. Counting the queue would read zero every
     // time: pair_random() takes any waiting person, so if we are still
     // waiting there is nobody pairable left to count. See the migration.
-    const { data: counts } = await admin.rpc("online_counts", {
-      p_user_id: me.id,
-      p_pool_id: me.poolId
-    });
+    // Independent of each other, so they go together. Serialising them
+    // added a whole round trip to an endpoint the client polls every 2s.
+    const [{ data: counts }, { data: ping }] = await Promise.all([
+      admin.rpc("online_counts", { p_user_id: me.id, p_pool_id: me.poolId }),
+      admin.from("RandomPing").select("userId").eq("userId", me.id).maybeSingle()
+    ]);
     const row = Array.isArray(counts) ? counts[0] : counts;
-
-    const { data: ping } = await admin
-      .from("RandomPing")
-      .select("userId")
-      .eq("userId", me.id)
-      .maybeSingle();
 
     return NextResponse.json({
       status: "waiting",

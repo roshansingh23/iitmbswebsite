@@ -77,7 +77,9 @@ export async function getSessionUser(): Promise<Profile | null> {
       .maybeSingle();
 
     if (existing) {
-      await touchLastSeen(admin, existing.id, existing.lastSeenAt);
+      // Fire-and-forget: every page render waited on this write, and
+      // nothing on the page depends on it landing.
+      void touchLastSeen(admin, existing.id, existing.lastSeenAt);
       // Backfill for rows created before the Domain migration, and
       // for anyone whose first sign-in raced the Domain insert.
       if (!existing.domainId) {

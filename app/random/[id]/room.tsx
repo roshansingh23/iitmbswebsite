@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, Bookmark, BookmarkCheck, Send, ShieldAlert, Shuffle, Eye, SlidersHorizontal } from "lucide-react";
+import { ArrowLeft, Bookmark, BookmarkCheck, CornerDownLeft, ShieldAlert, Shuffle, Eye, SlidersHorizontal } from "lucide-react";
 import { supabaseBrowser } from "@/lib/supabase-browser";
 import { AnonAvatar } from "@/components/anon-avatar";
 import { BottomSheet } from "@/components/bottom-sheet";
@@ -438,7 +438,7 @@ export function RandomRoom({
               className="shrink-0 w-11 h-11 rounded-full flex items-center justify-center text-white disabled:opacity-40 transition active:scale-95"
               style={{ background: ACCENT }}
             >
-              <Send size={17} />
+              <CornerDownLeft size={18} />
             </button>
           </form>
         </div>
